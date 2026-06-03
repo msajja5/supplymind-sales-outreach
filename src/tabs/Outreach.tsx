@@ -45,8 +45,17 @@ const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trad
 const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy','Poland','Finland'];
 const TABS = ['Find Leads','Upload CSV','Mass Email','Follow-up Sequences'];
 const SUBJECT_DEFAULT = 'Quick question about CBAM compliance - SupplyMind AI';
-const BODY_DEFAULT = ['Hi {{first_name}},','','Managing CBAM compliance across dozens of suppliers is a growing operational burden for companies like {{company}}.','','SupplyMind AI automates the entire process - supplier data collection, carbon calculations, and CBAM report generation - saving your team weeks of manual work.','','Would it make sense to spend 20 minutes exploring how this could work for {{company}}?','','Best,','Manjunath','SupplyMind AI | supplymindai.com'].join('
-');
+const BODY_DEFAULT = 'Hi {{first_name}},
+
+Managing CBAM compliance across dozens of suppliers is a growing operational burden for companies like {{company}}.
+
+SupplyMind AI automates the entire process - supplier data collection, carbon calculations, and CBAM report generation - saving your team weeks of manual work.
+
+Would it make sense to spend 20 minutes exploring how this could work for {{company}}?
+
+Best,
+Manjunath
+SupplyMind AI | supplymindai.com';
 const HUNTER_PH = 'Siemens
 BASF
 Philips
@@ -281,7 +290,6 @@ export default function Outreach() {
   return (
     <div style={s.wrap}>
 
-      {/* Contact View/Edit Modal */}
       {(viewContact || editContact) && (
         <div style={s.modal} onClick={() => { setViewContact(null); setEditContact(null); }}>
           <div style={s.modalBox} onClick={e => e.stopPropagation()}>
@@ -303,7 +311,7 @@ export default function Outreach() {
               </div>
             ) : viewContact ? (
               <div>
-                {[
+                {([
                   ['Name', viewContact.first_name + ' ' + viewContact.last_name],
                   ['Company', viewContact.company],
                   ['Role', viewContact.role],
@@ -312,7 +320,7 @@ export default function Outreach() {
                   ['LinkedIn', viewContact.linkedin_url],
                   ['Source', viewContact.source],
                   ['Status', viewContact.status || 'new'],
-                ].map(([k, v]) => (
+                ] as [string,string][]).map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', borderBottom: '1px solid #0f1830', padding: '8px 0' }}>
                     <div style={{ width: 100, fontSize: 12, color: '#7a8ba6', flexShrink: 0 }}>{k}</div>
                     <div style={{ fontSize: 13, color: '#e8ecf4', wordBreak: 'break-all' }}>{v || '-'}</div>
@@ -328,7 +336,6 @@ export default function Outreach() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div style={s.modal}>
           <div style={{ ...s.modalBox, border: '1px solid #c0392b55' }}>
@@ -346,7 +353,6 @@ export default function Outreach() {
         </div>
       )}
 
-      {/* Stats */}
       <div style={s.grid4}>
         {([['Pipeline', stats.pipeline, 'total contacts'],['Emails', stats.emails, 'sent / logged'],['Sequences', stats.seqs, 'active drips'],['Missing Email', stats.missing, 'need enriching']] as [string,number,string][]).map(([l,n,sub]) => (
           <div key={l} style={s.stat}>
@@ -372,7 +378,6 @@ export default function Outreach() {
 
       {msg && <div style={isErr ? s.err : s.ok}>{msg}</div>}
 
-      {/* Tab 0: Find Leads */}
       {tab === 0 && (
         <div>
           <div style={s.card}>
@@ -380,7 +385,7 @@ export default function Outreach() {
             <div style={s.info}>Enter company names below. Hunter finds verified work emails for matching job titles. Requires Hunter API key in Settings.</div>
             <label style={s.label}>Company names (one per line)</label>
             <textarea style={s.textarea} value={hunterCompanies} onChange={e => setHunterCompanies(e.target.value)} placeholder={HUNTER_PH} />
-            <label style={s.label}>Filter by job title</label>
+            <label style={s.label}>Filter by job title (optional)</label>
             <Chips items={JOB_TITLES} selected={titles} onToggle={toggleTitle} />
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button style={s.btnA} onClick={doHunter} disabled={loading}>
@@ -402,15 +407,10 @@ export default function Outreach() {
         </div>
       )}
 
-      {/* Tab 1: Upload CSV */}
       {tab === 1 && (
         <div style={s.card}>
           <div style={s.cardT}>Upload Contact List (CSV)</div>
-          <div style={s.info}>
-            Accepted columns: first_name, last_name, company, role, email, country, linkedin_url
-            Compatible: LinkedIn Sales Navigator, Apollo, Hunter, Lusha, ZoomInfo exports.
-            Each row needs (first_name + company) OR an email.
-          </div>
+          <div style={s.info}>Accepted columns: first_name, last_name, company, role, email, country, linkedin_url. Compatible with LinkedIn Sales Navigator, Apollo, Hunter, Lusha exports. Each row needs (first_name + company) OR an email.</div>
           {csvError && <div style={s.err}>{csvError}</div>}
           <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={onFileChange} />
           <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -443,29 +443,25 @@ export default function Outreach() {
         </div>
       )}
 
-      {/* Tab 2: Mass Email */}
       {tab === 2 && (
         <div style={s.card}>
           <div style={s.cardT}>Mass Personalised Email Campaign</div>
-          <div style={s.info}>
-            Tokens you can use in subject and body: {{first_name}}, {{company}}, {{role}}
-            These are auto-replaced per contact before sending.
-          </div>
+          <div style={s.info}>Tokens: {'{{first_name}}'}, {'{{company}}'}, {'{{role}}'} - auto-replaced per contact before sending.</div>
           <div style={s.row2}>
             <div>
               <label style={s.label}>Sender Display Name</label>
               <input style={s.input} value={fromName} onChange={e => setFromName(e.target.value)} placeholder="Manjunath @ SupplyMind AI" />
             </div>
             <div>
-              <label style={s.label}>Sender Email (from Settings)</label>
+              <label style={s.label}>From Email</label>
               <input style={s.input} value={fromEmail} onChange={e => setFromEmail(e.target.value)} placeholder="you@yourdomain.com" />
             </div>
           </div>
-          <label style={s.label}>Subject line</label>
+          <label style={s.label}>Subject</label>
           <input style={s.input} value={subject} onChange={e => setSubject(e.target.value)} />
           <label style={s.label}>Email body</label>
           <textarea style={{ ...s.textarea, minHeight: 220 }} value={bodyText} onChange={e => setBodyText(e.target.value)} />
-          <div style={s.info}>Without a Resend API key (Settings), emails are logged only - no real delivery. Add your Resend key to send real emails (free 3,000/month).</div>
+          <div style={s.info}>Without a Resend API key (Settings tab), emails are logged only - no real delivery. Add Resend key for real sending (free 3,000/month).</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' as const, alignItems: 'center' }}>
             <button style={s.btnSm} onClick={selAll}>All ({contacts.length})</button>
             <button style={s.btnSm} onClick={selWithEmail}>With Email ({contacts.filter(c => c.email).length})</button>
@@ -478,11 +474,10 @@ export default function Outreach() {
         </div>
       )}
 
-      {/* Tab 3: Sequences */}
       {tab === 3 && (
         <div style={s.card}>
           <div style={s.cardT}>Schedule Follow-up Sequences</div>
-          <div style={s.info}>Creates a 4-touch drip: LinkedIn connection (day 0), follow-up (day 3), email (day 7), final nudge (day 14).</div>
+          <div style={s.info}>Creates a 4-touch drip: LinkedIn (day 0), follow-up (day 3), email (day 7), final nudge (day 14).</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <button style={s.btnSm} onClick={selAll}>All ({contacts.length})</button>
             <button style={s.btnSm} onClick={selNone}>None</button>
@@ -494,7 +489,6 @@ export default function Outreach() {
         </div>
       )}
 
-      {/* Contact Pipeline Table */}
       <div style={s.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' as const, gap: 8 }}>
           <div style={s.cardT}>Contact Pipeline ({contacts.length})</div>
@@ -511,12 +505,8 @@ export default function Outreach() {
             <table style={s.table}>
               <thead><tr>
                 <th style={s.th}></th>
-                <th style={s.th}>Name</th>
-                <th style={s.th}>Company</th>
-                <th style={s.th}>Role</th>
-                <th style={s.th}>Email</th>
-                <th style={s.th}>Country</th>
-                <th style={s.th}>Source</th>
+                <th style={s.th}>Name</th><th style={s.th}>Company</th><th style={s.th}>Role</th>
+                <th style={s.th}>Email</th><th style={s.th}>Country</th><th style={s.th}>Source</th>
                 <th style={s.th}>Actions</th>
               </tr></thead>
               <tbody>{contacts.map(c => (
