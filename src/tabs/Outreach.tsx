@@ -46,6 +46,9 @@ const s: Record<string, React.CSSProperties> = {
 const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trade Compliance Manager','Sustainability Manager','VP ESG','Chief Sustainability Officer','Head of Trade Finance','Climate Director','Carbon Accounting Manager'];
 const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy'];
 
+const MASS_SUBJECT_DEFAULT = 'Quick question about CBAM readiness — SupplyMind AI';
+const MASS_BODY_DEFAULT = ['Hi {{first_name}},', '', 'Managing CBAM compliance across dozens of suppliers is becoming a real operational challenge for companies like {{company}}.', '', 'SupplyMind AI automates the entire process — supplier data collection, carbon calculations, and CBAM report generation.', '', 'Would it make sense to spend 20 minutes showing you how it works?', '', 'Best,', 'Manjunath', 'SupplyMind AI'].join('\n');
+
 export default function Outreach() {
   const [tab, setTab] = useState(0);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -59,18 +62,6 @@ export default function Outreach() {
   const [countries, setCountries] = useState<string[]>(['Netherlands','Belgium','Germany']);
   const [apifyUrls, setApifyUrls] = useState('');
   const [indivChannel, setIndivChannel] = useState('linkedin');
-  const MASS_SUBJECT_DEFAULT = 'Quick question about CBAM readiness — SupplyMind AI';
-  const MASS_BODY_DEFAULT = 'Hi {{first_name}},
-
-Managing CBAM compliance across dozens of suppliers is becoming a real operational challenge for companies like {{company}}.
-
-SupplyMind AI automates the entire process — supplier data collection, carbon calculations, and CBAM report generation.
-
-Would it make sense to spend 20 minutes showing you how it works?
-
-Best,
-Manjunath
-SupplyMind AI';
   const [massSubject, setMassSubject] = useState(MASS_SUBJECT_DEFAULT);
   const [massBody, setMassBody] = useState(MASS_BODY_DEFAULT);
 
@@ -232,7 +223,7 @@ SupplyMind AI';
           <div style={s.cardTitle}>Mass Email</div>
           <label style={s.label}>Subject</label>
           <input style={s.input} value={massSubject} onChange={e => setMassSubject(e.target.value)} />
-          <label style={s.label}>Body (use {{'{'}}{{'}'}}first_name{{'}'}}{'}'}, {{'{'}}{{'{'}}company{{'}'}}{{'}'}})</label>
+          <label style={s.label}>Body (use {{first_name}}, {{company}})</label>
           <textarea style={{ ...s.textarea, minHeight: 160 }} value={massBody} onChange={e => setMassBody(e.target.value)} />
           <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
             <button style={s.btnSm} onClick={selAll}>Select All ({contacts.length})</button>
