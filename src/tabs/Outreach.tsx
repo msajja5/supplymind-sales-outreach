@@ -28,13 +28,17 @@ const s: Record<string, React.CSSProperties> = {
   btn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnG: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#38c9a0', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnA: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  btnR: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#c0392b', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnSm: { padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1e2d45', color: '#e8ecf4', cursor: 'pointer', fontSize: 12 },
+  btnSmR: { padding: '5px 12px', borderRadius: 6, border: '1px solid #c0392b44', background: 'transparent', color: '#e74c3c', cursor: 'pointer', fontSize: 12 },
   chip: { display: 'inline-block', padding: '4px 10px', borderRadius: 20, border: '1px solid #2a3348', fontSize: 12, cursor: 'pointer', margin: '0 4px 4px 0', userSelect: 'none' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
   th: { padding: '8px 10px', textAlign: 'left', color: '#7a8ba6', borderBottom: '1px solid #1e2d45', fontSize: 11 },
   td: { padding: '7px 10px', borderBottom: '1px solid #0f1830', color: '#e8ecf4', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
   info: { background: '#0a1020', border: '1px solid #1e2d45', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#5a7a9a', marginBottom: 12 },
+  modal: { position: 'fixed', inset: 0, background: '#000000aa', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+  modalBox: { background: '#0d1525', border: '1px solid #c0392b55', borderRadius: 12, padding: 28, maxWidth: 400, width: '90%' },
 };
 
 const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trade Compliance Manager','Sustainability Manager','VP ESG','Chief Sustainability Officer','Head of Trade Finance','Climate Director','Carbon Accounting Manager'];
@@ -72,6 +76,8 @@ export default function Outreach() {
   const [fromName, setFromName] = useState('Manjunath @ SupplyMind AI');
   const [csvPreview, setCsvPreview] = useState<Contact[]>([]);
   const [csvError, setCsvError] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<'selected' | 'all'>('selected');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadAll(); }, []);
@@ -107,6 +113,34 @@ export default function Outreach() {
   const selAll = () => setSelIds(new Set(contacts.map(c => c.id!).filter(Boolean)));
   const selNone = () => setSelIds(new Set());
   const selWithEmail = () => setSelIds(new Set(contacts.filter(c => c.email && c.id).map(c => c.id!)));
+
+  const confirmDelete = (mode: 'selected' | 'all') => { setDeleteMode(mode); setShowDeleteModal(true); };
+
+  const doDelete = async () => {
+    setShowDeleteModal(false);
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+    if (deleteMode === 'all') {
+      // Delete sequences and messages first (FK), then contacts
+      await supabase.from('sequences').delete().eq('user_id', user.id);
+      await supabase.from('messages').delete().eq('user_id', user.id);
+      const { error } = await supabase.from('contacts').delete().eq('user_id', user.id);
+      if (error) { notify('Delete error: ' + error.message, true); }
+      else { notify('All contacts, messages and sequences deleted.'); setSelIds(new Set()); }
+    } else {
+      const ids = Array.from(selIds);
+      if (!ids.length) { setLoading(false); return; }
+      // Delete related records first
+      await supabase.from('sequences').delete().in('contact_id', ids);
+      await supabase.from('messages').delete().in('contact_id', ids);
+      const { error } = await supabase.from('contacts').delete().in('id', ids);
+      if (error) { notify('Delete error: ' + error.message, true); }
+      else { notify('Deleted ' + ids.length + ' contacts.'); setSelIds(new Set()); }
+    }
+    await loadAll();
+    setLoading(false);
+  };
 
   const doApollo = async () => {
     if (!titles.length || !countries.length) return notify('Select at least one title and country', true);
@@ -237,6 +271,25 @@ export default function Outreach() {
 
   return (
     <div style={s.wrap}>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div style={s.modal}>
+          <div style={s.modalBox}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#e74c3c', marginBottom: 10 }}>Confirm Delete</div>
+            <div style={{ color: '#a0b0c0', fontSize: 13, marginBottom: 20 }}>
+              {deleteMode === 'all'
+                ? 'This will permanently delete ALL ' + contacts.length + ' contacts, their messages, and sequences from Supabase. This cannot be undone.'
+                : 'This will permanently delete ' + selIds.size + ' selected contacts and their related data. This cannot be undone.'}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button style={s.btnR} onClick={doDelete}>Yes, Delete Permanently</button>
+              <button style={s.btnSm} onClick={() => setShowDeleteModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={s.grid4}>
         {([['Pipeline', stats.pipeline, 'total contacts'], ['Emails', stats.emails, 'sent / logged'], ['Sequences', stats.seqs, 'active drips'], ['Missing Email', stats.missing, 'need enriching']] as [string, number, string][]).map(([l, n, sub]) => (
           <div key={l} style={s.stat}>
@@ -318,10 +371,8 @@ export default function Outreach() {
                 </tr></thead>
                 <tbody>{csvPreview.slice(0, 20).map((c, i) => (
                   <tr key={i}>
-                    <td style={s.td}>{c.first_name}</td>
-                    <td style={s.td}>{c.last_name}</td>
-                    <td style={s.td}>{c.company}</td>
-                    <td style={s.td}>{c.role}</td>
+                    <td style={s.td}>{c.first_name}</td><td style={s.td}>{c.last_name}</td>
+                    <td style={s.td}>{c.company}</td><td style={s.td}>{c.role}</td>
                     <td style={s.td}>{c.email || <span style={{ color: '#f59e0b' }}>missing</span>}</td>
                     <td style={s.td}>{c.country}</td>
                   </tr>
@@ -346,7 +397,7 @@ export default function Outreach() {
               <input style={s.input} value={subject} onChange={e => setSubject(e.target.value)} />
             </div>
           </div>
-          <label style={s.label}>Email body - personalisation tokens: {"{{first_name}}"}, {"{{company}}"}, {"{{role}}"}</label>
+          <label style={s.label}>Email body - tokens: {"{{first_name}}"}, {"{{company}}"}, {"{{role}}"}</label>
           <textarea style={{ ...s.textarea, minHeight: 220 }} value={bodyText} onChange={e => setBodyText(e.target.value)} />
           <div style={s.info}>Add your Resend API key in Settings to send real emails (free 3,000/month at resend.com). Without it, outreach is logged for tracking only.</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -376,16 +427,28 @@ export default function Outreach() {
         </div>
       )}
 
-      {contacts.length > 0 && (
-        <div style={s.card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={s.cardT}>Contact Pipeline ({contacts.length} contacts)</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button style={s.btnSm} onClick={selAll}>All</button>
-              <button style={s.btnSm} onClick={selWithEmail}>With Email</button>
-              <button style={s.btnSm} onClick={selNone}>None</button>
-            </div>
+      {/* Contact Pipeline Table */}
+      <div style={s.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div style={s.cardT}>Contact Pipeline ({contacts.length} contacts)</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button style={s.btnSm} onClick={selAll}>All</button>
+            <button style={s.btnSm} onClick={selWithEmail}>With Email</button>
+            <button style={s.btnSm} onClick={selNone}>None</button>
+            {selIds.size > 0 && (
+              <button style={s.btnSmR} onClick={() => confirmDelete('selected')}>
+                Delete {selIds.size} Selected
+              </button>
+            )}
+            {contacts.length > 0 && (
+              <button style={s.btnSmR} onClick={() => confirmDelete('all')}>
+                Delete All
+              </button>
+            )}
           </div>
+        </div>
+
+        {contacts.length > 0 ? (
           <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }}>
             <table style={s.table}>
               <thead><tr>
@@ -405,16 +468,12 @@ export default function Outreach() {
               ))}</tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {contacts.length === 0 && (
-        <div style={{ ...s.card, textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>0</div>
-          <div style={{ color: '#7a8ba6', fontSize: 14, marginBottom: 8 }}>No contacts in pipeline yet</div>
-          <div style={{ color: '#4a5a6a', fontSize: 13 }}>Use Find Leads tab to search Hunter.io by company name, or Upload CSV to import your own list</div>
-        </div>
-      )}
+        ) : (
+          <div style={{ textAlign: 'center', padding: '32px 0', color: '#4a5a6a', fontSize: 13 }}>
+            No contacts yet. Use Find Leads tab or Upload CSV to add contacts.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
