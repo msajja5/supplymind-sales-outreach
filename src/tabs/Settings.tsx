@@ -1,99 +1,59 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Card, Label, Btn, BtnRow } from '../components/Card';
+
+const s: Record<string, React.CSSProperties> = {
+  wrap: { color: '#e8ecf4', fontFamily: 'Inter, sans-serif', maxWidth: 600 },
+  card: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 12, padding: 24, marginBottom: 16 },
+  title: { fontSize: 16, fontWeight: 700, marginBottom: 16 },
+  label: { fontSize: 12, color: '#7a8ba6', marginBottom: 4, display: 'block' },
+  input: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, marginBottom: 12 },
+  btn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  ok: { background: '#0f1a10', border: '1px solid #38c9a055', borderRadius: 8, padding: '10px 14px', color: '#38c9a0', fontSize: 13, marginBottom: 14 },
+  err: { background: '#1a0f0f', border: '1px solid #c0392b55', borderRadius: 8, padding: '10px 14px', color: '#e74c3c', fontSize: 13, marginBottom: 14 },
+  hint: { fontSize: 11, color: '#4a5a6a', marginTop: -8, marginBottom: 12 },
+};
 
 export default function Settings() {
-  const [keys, setKeys] = useState({
-    groq_api_key: '',
-    pdl_api_key: '',
-    hunter_api_key: '',
-    apify_api_key: '',
-  });
-  const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [cfg, setCfg] = useState({ apollo_api_key: '', apify_api_key: '', groq_api_key: '', hunter_api_key: '' });
+  const [msg, setMsg] = useState('');
+  const [isErr, setIsErr] = useState(false);
 
-  useEffect(() => { loadKeys(); }, []);
-
-  const loadKeys = async () => {
+  useEffect(() => { load(); }, []);
+  const load = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase.from('tool_configs').select('*').eq('user_id', user.id).maybeSingle();
-    if (data) setKeys({
-      groq_api_key: data.groq_api_key || '',
-      pdl_api_key: data.pdl_api_key || '',
-      hunter_api_key: data.hunter_api_key || '',
-      apify_api_key: data.apify_api_key || '',
-    });
+    if (data) setCfg({ apollo_api_key: data.apollo_api_key || '', apify_api_key: data.apify_api_key || '', groq_api_key: data.groq_api_key || '', hunter_api_key: data.hunter_api_key || '' });
   };
 
   const save = async () => {
-    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('tool_configs').upsert({ user_id: user.id, ...keys }, { onConflict: 'user_id' });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-    setLoading(false);
+    const { error } = await supabase.from('tool_configs').upsert({ user_id: user.id, ...cfg }, { onConflict: 'user_id' });
+    if (error) { setMsg(error.message); setIsErr(true); }
+    else { setMsg('Saved!'); setIsErr(false); }
+    setTimeout(() => setMsg(''), 3000);
   };
 
-  const apiKeys = [
-    { label: 'Groq API Key (AI Generator - FREE 14,400 req/day)', key: 'groq_api_key' as const, ph: 'gsk_...', url: 'https://console.groq.com/keys', help: 'Free forever. Get key at' },
-    { label: 'People Data Labs API Key (Contact Search - FREE 100 calls/mo)', key: 'pdl_api_key' as const, ph: 'pk_live_...', url: 'https://dashboard.peopledatalabs.com/api-keys', help: 'Free 100 API calls/month. Get key at' },
-    { label: 'Hunter.io API Key (Email Finder - FREE 25/mo)', key: 'hunter_api_key' as const, ph: 'hunter_...', url: 'https://hunter.io/api-keys', help: 'Free 25 searches/month. Get key at' },
-    { label: 'Apify API Key (LinkedIn Scraper - FREE $5 credits/mo)', key: 'apify_api_key' as const, ph: 'apify_api_...', url: 'https://console.apify.com/account/integrations', help: 'Free $5 credits/month. Get key at' },
-  ];
-
   return (
-    <div>
-      <Card title="API Keys">
-        <div style={{ background: '#1a2d1a', border: '1px solid #38c9a055', borderRadius: 7, padding: '10px 14px', fontSize: 12, color: '#38c9a0', marginBottom: 20 }}>
-          All keys stored securely in your database. All services below have generous free tiers.
-        </div>
-        {apiKeys.map(({ label, key, ph, url, help }) => (
-          <div key={key} style={{ marginBottom: 18 }}>
-            <Label>{label}</Label>
-            <input
-              type="password"
-              value={keys[key]}
-              onChange={e => setKeys(k => ({ ...k, [key]: e.target.value }))}
-              placeholder={ph}
-              style={{ width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, marginBottom: 4 }}
-            />
-            <div style={{ fontSize: 11, color: '#7a8ba6' }}>
-              {help} <a href={url} target="_blank" rel="noreferrer" style={{ color: '#4f8ef7' }}>{url.replace('https://', '')}</a>
-            </div>
-          </div>
-        ))}
-        <BtnRow>
-          <Btn onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save API Keys'}</Btn>
-          {saved && <span style={{ color: '#38c9a0', fontSize: 13, alignSelf: 'center' }}>Saved!</span>}
-        </BtnRow>
-      </Card>
-
-      <Card title="Free Tier Summary">
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr>{['Service', 'Use', 'Free Limit', 'Sign Up'].map(h => (
-              <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#7a8ba6', borderBottom: '1px solid #2a3348' }}>{h}</th>
-            ))}</tr>
-          </thead>
-          <tbody>
-            {[
-              ['Groq', 'AI messages', '14,400 req/day', 'console.groq.com'],
-              ['People Data Labs', 'Contact search', '100 calls/month', 'peopledatalabs.com'],
-              ['Hunter.io', 'Email finder', '25 searches/month', 'hunter.io'],
-              ['Apify', 'LinkedIn scraper', '$5 free credits/month', 'console.apify.com'],
-            ].map(([svc, use, free, link]) => (
-              <tr key={svc} style={{ borderBottom: '1px solid #1a2035' }}>
-                <td style={{ padding: '8px 10px', color: '#e8ecf4', fontWeight: 600 }}>{svc}</td>
-                <td style={{ padding: '8px 10px', color: '#7a8ba6' }}>{use}</td>
-                <td style={{ padding: '8px 10px', color: '#38c9a0' }}>{free}</td>
-                <td style={{ padding: '8px 10px' }}><a href={'https://' + link} target="_blank" rel="noreferrer" style={{ color: '#4f8ef7', fontSize: 12 }}>{link}</a></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+    <div style={s.wrap}>
+      {msg && <div style={isErr ? s.err : s.ok}>{msg}</div>}
+      <div style={s.card}>
+        <div style={s.title}>API Keys</div>
+        <label style={s.label}>Groq API Key (free AI messages)</label>
+        <input style={s.input} type="password" value={cfg.groq_api_key} onChange={e => setCfg(p => ({ ...p, groq_api_key: e.target.value }))} placeholder="gsk_..." />
+        <div style={s.hint}>Free at console.groq.com/keys — 14,400 requests/day</div>
+        <label style={s.label}>Apollo.io API Key (contact search)</label>
+        <input style={s.input} type="password" value={cfg.apollo_api_key} onChange={e => setCfg(p => ({ ...p, apollo_api_key: e.target.value }))} placeholder="Apollo key..." />
+        <div style={s.hint}>Free plan: 50 credits/month at app.apollo.io</div>
+        <label style={s.label}>Hunter.io API Key (email finder)</label>
+        <input style={s.input} type="password" value={cfg.hunter_api_key} onChange={e => setCfg(p => ({ ...p, hunter_api_key: e.target.value }))} placeholder="Hunter key..." />
+        <div style={s.hint}>Free plan: 25 searches/month at hunter.io — best for finding work emails</div>
+        <label style={s.label}>Apify API Key (LinkedIn scraper)</label>
+        <input style={s.input} type="password" value={cfg.apify_api_key} onChange={e => setCfg(p => ({ ...p, apify_api_key: e.target.value }))} placeholder="Apify key..." />
+        <div style={s.hint}>Free plan at console.apify.com</div>
+        <button style={s.btn} onClick={save}>Save Keys</button>
+      </div>
     </div>
   );
 }
