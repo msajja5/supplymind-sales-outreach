@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Card, Label, Btn, BtnRow, Grid2, OutputBox, StatBar } from '../components/Card'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_URL: string = (import.meta as any).env.VITE_SUPABASE_URL
 
 interface Props { session: Session }
 
