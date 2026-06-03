@@ -1,0 +1,15 @@
+:root {
+  --bg: #0d0f14; --surface: #161b25; --card: #1e2535;
+  --border: #2a3348; --accent: #4f8ef7; --accent2: #38c9a0;
+  --warn: #f7a94f; --danger: #f75f5f; --text: #e8ecf4; --muted: #7a8ba6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
+input, textarea, select {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 7px; padding: 9px 12px; font-size: 13px;
+  font-family: inherit; outline: none; transition: border .15s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; }
+a { color: var(--accent2); }
