@@ -28,7 +28,6 @@ const s: Record<string, React.CSSProperties> = {
   btn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnG: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#38c9a0', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnA: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
-  btnP: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#a855f7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnSm: { padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1e2d45', color: '#e8ecf4', cursor: 'pointer', fontSize: 12 },
   chip: { display: 'inline-block', padding: '4px 10px', borderRadius: 20, border: '1px solid #2a3348', fontSize: 12, cursor: 'pointer', margin: '0 4px 4px 0', userSelect: 'none' as const },
   table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 12 },
@@ -39,22 +38,25 @@ const s: Record<string, React.CSSProperties> = {
 
 const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trade Compliance Manager','Sustainability Manager','VP ESG','Chief Sustainability Officer','Head of Trade Finance','Climate Director','Carbon Accounting Manager'];
 const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy','Poland','Finland'];
-const TABS = ['🔍 Find Leads','📤 Upload CSV','📧 Mass Email','⏰ Follow-up Sequences'];
+const TABS = ['\ud83d\udd0d Find Leads','\ud83d\udce4 Upload CSV','\ud83d\udce7 Mass Email','\u23f0 Follow-up Sequences'];
 
-const SUBJECT_DEFAULT = 'Quick question about CBAM compliance — SupplyMind AI';
-const BODY_LINES = [
+const SUBJECT_DEFAULT = 'Quick question about CBAM compliance \u2014 SupplyMind AI';
+const BODY_DEFAULT = [
   'Hi {{first_name}},',
   '',
   'Managing CBAM compliance across dozens of suppliers is a growing operational burden for companies like {{company}}.',
   '',
-  'SupplyMind AI automates the entire process — supplier data collection, carbon calculations, and CBAM report generation — saving your team weeks of manual work.',
+  'SupplyMind AI automates the entire process \u2014 supplier data collection, carbon calculations, and CBAM report generation \u2014 saving your team weeks of manual work.',
   '',
   'Would it make sense to spend 20 minutes exploring how this could work for {{company}}?',
   '',
   'Best,',
   'Manjunath',
   'SupplyMind AI | supplymindai.com',
-];
+].join('\n');
+
+const HUNTER_PLACEHOLDER = 'Siemens\nBASF\nPhilips\nSAP\nThyssenKrupp\nRWE\nE.ON\nLinde';
+const CSV_HINT = 'first_name, last_name, company, role, email, country, linkedin_url';
 
 export default function Outreach() {
   const [tab, setTab] = useState(0);
@@ -68,7 +70,7 @@ export default function Outreach() {
   const [countries, setCountries] = useState(['Netherlands','Belgium','Germany','France']);
   const [hunterCompanies, setHunterCompanies] = useState('');
   const [subject, setSubject] = useState(SUBJECT_DEFAULT);
-  const [bodyText, setBodyText] = useState(BODY_LINES.join('\n'));
+  const [bodyText, setBodyText] = useState(BODY_DEFAULT);
   const [fromName, setFromName] = useState('Manjunath @ SupplyMind AI');
   const [csvPreview, setCsvPreview] = useState<Contact[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -164,7 +166,7 @@ export default function Outreach() {
       const text = ev.target?.result as string;
       const parsed = parseCsv(text);
       setCsvPreview(parsed);
-      notify(`Parsed ${parsed.length} rows from CSV. Click Import to save.`);
+      notify(`Parsed ${parsed.length} rows. Click Import to save.`);
     };
     reader.readAsText(file);
   };
@@ -183,8 +185,8 @@ export default function Outreach() {
     setLoading(true);
     const d = await call('send_mass_email', { contact_ids: ids, subject, body_template: bodyText, from_name: fromName });
     if (d.error) { notify(d.error, true); }
-    else if (d.note) { notify(`${d.note} (${d.logged} logged)`); }
-    else { notify(`Sent ${d.sent} emails successfully!`); }
+    else if (d.note) { notify(`${d.logged || 0} emails logged. ${d.note}`); }
+    else { notify(`✓ Sent ${d.sent} emails!`); }
     await loadAll(); setLoading(false);
   };
 
@@ -197,13 +199,20 @@ export default function Outreach() {
     await loadAll(); setLoading(false);
   };
 
+  const Chips = ({ items, selected, onToggle }: { items: string[]; selected: string[]; onToggle: (v: string) => void }) => (
+    <div style={{ marginBottom: 12 }}>
+      {items.map(t => (
+        <span key={t} style={{ ...s.chip, background: selected.includes(t) ? '#1a3060' : '#0a0f18', color: selected.includes(t) ? '#4f8ef7' : '#7a8ba6', borderColor: selected.includes(t) ? '#4f8ef7' : '#2a3348' }} onClick={() => onToggle(t)}>{t}</span>
+      ))}
+    </div>
+  );
+
   return (
     <div style={s.wrap}>
       <div style={s.grid4}>
-        {[['Pipeline', stats.pipeline, 'contacts'], ['Emails', stats.emails, 'sent/logged'], ['Sequences', stats.seqs, 'active'], ['Missing Email', stats.missing, 'need enriching']]
-          .map(([l, n, sub]) => (
-          <div key={String(l)} style={s.stat}>
-            <div style={{ ...s.statN, color: l === 'Missing Email' && Number(n) > 0 ? '#f59e0b' : '#4f8ef7' }}>{n}</div>
+        {([['Pipeline', stats.pipeline, 'total contacts'], ['Emails', stats.emails, 'sent / logged'], ['Sequences', stats.seqs, 'active drips'], ['Missing Email', stats.missing, 'need enriching']] as [string, number, string][]).map(([l, n, sub]) => (
+          <div key={l} style={s.stat}>
+            <div style={{ ...s.statN, color: l === 'Missing Email' && n > 0 ? '#f59e0b' : '#4f8ef7' }}>{n}</div>
             <div style={s.statL}>{l}</div><div style={s.statS}>{sub}</div>
           </div>
         ))}
@@ -211,8 +220,8 @@ export default function Outreach() {
 
       {stats.missing > 0 && (
         <div style={s.warn}>
-          <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ {stats.missing} contacts missing email — use Hunter to find them</span>
-          <button style={{ ...s.btnA, padding: '6px 14px', fontSize: 12 }} onClick={doHunterEnrich} disabled={loading}>🔍 Find Emails (Hunter)</button>
+          <span style={{ fontSize: 13, color: '#f59e0b' }}>\u26a0\ufe0f {stats.missing} contacts missing email \u2014 use Hunter to find them</span>
+          <button style={{ ...s.btnA, padding: '6px 14px', fontSize: 12 }} onClick={doHunterEnrich} disabled={loading}>{loading ? 'Finding...' : '\ud83d\udd0d Find Emails (Hunter)'}</button>
         </div>
       )}
 
@@ -225,61 +234,57 @@ export default function Outreach() {
       {tab === 0 && (
         <div>
           <div style={s.card}>
-            <div style={s.cardT}>🌍 Hunter.io — Find Leads by Company (FREE, recommended)</div>
-            <label style={s.label}>Company names, one per line (e.g. Siemens, BASF, Bosch)</label>
-            <textarea style={s.textarea} value={hunterCompanies} onChange={e => setHunterCompanies(e.target.value)}
-              placeholder={"Siemens
-BASF
-Philips
-SAP
-ThyssenKrupp"} />
-            <label style={s.label}>Filter by job titles (optional — same selection as below)</label>
-            <div style={{ marginBottom: 12 }}>{JOB_TITLES.map(t => (
-              <span key={t} style={{ ...s.chip, background: titles.includes(t) ? '#1a3060' : '#0a0f18', color: titles.includes(t) ? '#4f8ef7' : '#7a8ba6', borderColor: titles.includes(t) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleTitle(t)}>{t}</span>
-            ))}</div>
-            <button style={s.btnA} onClick={doHunter} disabled={loading}>{loading ? 'Searching Hunter...' : '🔍 Search Hunter.io'}</button>
-            <span style={{ fontSize: 12, color: '#4a5a6a', marginLeft: 12 }}>Finds verified work emails automatically</span>
+            <div style={s.cardT}>\ud83c\udf0d Hunter.io \u2014 Find Leads by Company (FREE \u2713 Recommended)</div>
+            <label style={s.label}>Target company names, one per line</label>
+            <textarea style={s.textarea} value={hunterCompanies} onChange={e => setHunterCompanies(e.target.value)} placeholder={HUNTER_PLACEHOLDER} />
+            <label style={s.label}>Filter by job title (optional)</label>
+            <Chips items={JOB_TITLES} selected={titles} onToggle={toggleTitle} />
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button style={s.btnA} onClick={doHunter} disabled={loading}>{loading ? 'Searching Hunter...' : '\ud83d\udd0d Search Hunter.io'}</button>
+              <span style={{ fontSize: 12, color: '#4a5a6a' }}>Finds verified work emails automatically</span>
+            </div>
           </div>
 
           <div style={s.card}>
-            <div style={s.cardT}>🚀 Apollo.io — Search by Title + Country (Paid plan required)</div>
+            <div style={s.cardT}>\ud83d\ude80 Apollo.io \u2014 Search by Role + Country (needs paid plan)</div>
             <label style={s.label}>Job titles</label>
-            <div style={{ marginBottom: 10 }}>{JOB_TITLES.map(t => (
-              <span key={t} style={{ ...s.chip, background: titles.includes(t) ? '#1a3060' : '#0a0f18', color: titles.includes(t) ? '#4f8ef7' : '#7a8ba6', borderColor: titles.includes(t) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleTitle(t)}>{t}</span>
-            ))}</div>
+            <Chips items={JOB_TITLES} selected={titles} onToggle={toggleTitle} />
             <label style={s.label}>Countries</label>
-            <div style={{ marginBottom: 14 }}>{COUNTRIES.map(c => (
-              <span key={c} style={{ ...s.chip, background: countries.includes(c) ? '#1a3060' : '#0a0f18', color: countries.includes(c) ? '#4f8ef7' : '#7a8ba6', borderColor: countries.includes(c) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleCountry(c)}>{c}</span>
-            ))}</div>
-            <button style={s.btn} onClick={doApollo} disabled={loading}>{loading ? 'Searching Apollo...' : 'Search Apollo'}</button>
+            <Chips items={COUNTRIES} selected={countries} onToggle={toggleCountry} />
+            <button style={s.btn} onClick={doApollo} disabled={loading}>{loading ? 'Searching...' : 'Search Apollo'}</button>
           </div>
         </div>
       )}
 
       {tab === 1 && (
         <div style={s.card}>
-          <div style={s.cardT}>📂 Upload Contact CSV</div>
-          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 14 }}>
-            Upload a CSV with columns: <code style={{ color: '#4f8ef7' }}>first_name, last_name, company, role, email, country, linkedin_url</code><br />
-            Column names are flexible — we auto-detect common variations.
-          </p>
+          <div style={s.cardT}>\ud83d\udcc2 Upload Contact List (CSV)</div>
+          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 6 }}>Upload a CSV exported from LinkedIn Sales Navigator, Apollo, or any tool.</p>
+          <p style={{ color: '#4a5a6a', fontSize: 12, marginBottom: 14 }}>Columns auto-detected: <code style={{ color: '#4f8ef7' }}>{CSV_HINT}</code></p>
           <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={onFileChange} />
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            <button style={s.btn} onClick={() => fileRef.current?.click()}>📁 Choose CSV File</button>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+            <button style={s.btn} onClick={() => fileRef.current?.click()}>\ud83d\udcc1 Choose CSV File</button>
             {csvPreview.length > 0 && (
-              <button style={s.btnG} onClick={doImportCsv} disabled={loading}>{loading ? 'Importing...' : `✓ Import ${csvPreview.length} Contacts`}</button>
+              <button style={s.btnG} onClick={doImportCsv} disabled={loading}>
+                {loading ? 'Importing...' : `\u2713 Import ${csvPreview.length} Contacts`}
+              </button>
             )}
           </div>
           {csvPreview.length > 0 && (
-            <div style={{ overflowX: 'auto' as const, maxHeight: 300, overflowY: 'auto' as const }}>
+            <div style={{ overflowX: 'auto' as const, maxHeight: 280, overflowY: 'auto' as const }}>
               <table style={s.table}>
                 <thead><tr><th style={s.th}>Name</th><th style={s.th}>Company</th><th style={s.th}>Role</th><th style={s.th}>Email</th><th style={s.th}>Country</th></tr></thead>
                 <tbody>{csvPreview.slice(0, 20).map((c, i) => (
-                  <tr key={i}><td style={s.td}>{c.first_name} {c.last_name}</td><td style={s.td}>{c.company}</td><td style={s.td}>{c.role}</td>
-                    <td style={s.td}>{c.email || <span style={{ color: '#f59e0b' }}>—</span>}</td><td style={s.td}>{c.country}</td></tr>
+                  <tr key={i}>
+                    <td style={s.td}>{c.first_name} {c.last_name}</td>
+                    <td style={s.td}>{c.company}</td>
+                    <td style={s.td}>{c.role}</td>
+                    <td style={s.td}>{c.email || <span style={{ color: '#f59e0b' }}>\u2014</span>}</td>
+                    <td style={s.td}>{c.country}</td>
+                  </tr>
                 ))}</tbody>
               </table>
-              {csvPreview.length > 20 && <div style={{ color: '#4a5a6a', fontSize: 12, padding: '8px 10px' }}>...and {csvPreview.length - 20} more rows</div>}
+              {csvPreview.length > 20 && <div style={{ color: '#4a5a6a', fontSize: 12, padding: 8 }}>...and {csvPreview.length - 20} more rows</div>}
             </div>
           )}
         </div>
@@ -287,68 +292,72 @@ ThyssenKrupp"} />
 
       {tab === 2 && (
         <div style={s.card}>
-          <div style={s.cardT}>📧 Send Mass Personalised Email</div>
+          <div style={s.cardT}>\ud83d\udce7 Mass Personalised Email Campaign</div>
           <div style={s.row2}>
             <div>
-              <label style={s.label}>From name</label>
-              <input style={s.input} value={fromName} onChange={e => setFromName(e.target.value)} placeholder="Manjunath @ SupplyMind AI" />
+              <label style={s.label}>Sender name</label>
+              <input style={s.input} value={fromName} onChange={e => setFromName(e.target.value)} />
             </div>
             <div>
               <label style={s.label}>Subject line</label>
               <input style={s.input} value={subject} onChange={e => setSubject(e.target.value)} />
             </div>
           </div>
-          <label style={s.label}>Email body — use {'{{'}first_name{'}}'}, {'{{'}company{'}}'}, {'{{'}role{'}}'}</label>
-          <textarea style={{ ...s.textarea, minHeight: 200 }} value={bodyText} onChange={e => setBodyText(e.target.value)} />
+          <label style={s.label}>Email body \u2014 tokens: {'{{first_name}}'}, {'{{company}}'}, {'{{role}}'}</label>
+          <textarea style={{ ...s.textarea, minHeight: 220 }} value={bodyText} onChange={e => setBodyText(e.target.value)} />
           <div style={{ background: '#0a1020', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#4a5a6a' }}>
-            ℹ️ Add <strong style={{ color: '#4f8ef7' }}>Resend API key</strong> in Settings to actually send emails (free 3,000/month). Without it, emails are logged only.
+            \u2139\ufe0f Add <strong style={{ color: '#4f8ef7' }}>Resend API key</strong> in Settings to send real emails (free 3,000/month at resend.com). Without it, emails are logged for tracking.
           </div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' as const }}>
-            <button style={s.btnSm} onClick={selAll}>Select All ({contacts.length})</button>
-            <button style={s.btnSm} onClick={selWithEmail}>With Email ({contacts.filter(c=>c.email).length})</button>
-            <button style={s.btnSm} onClick={selNone}>Deselect All</button>
-            <span style={{ fontSize: 13, color: '#7a8ba6', alignSelf: 'center' }}>{selIds.size} selected</span>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' as const, alignItems: 'center' }}>
+            <button style={s.btnSm} onClick={selAll}>All ({contacts.length})</button>
+            <button style={s.btnSm} onClick={selWithEmail}>With Email ({contacts.filter(c => c.email).length})</button>
+            <button style={s.btnSm} onClick={selNone}>None</button>
+            <span style={{ fontSize: 13, color: '#7a8ba6' }}>{selIds.size} selected</span>
           </div>
-          <button style={s.btnG} onClick={doMassEmail} disabled={loading || !selIds.size}>{loading ? 'Sending...' : `📤 Send to ${selIds.size} Contacts`}</button>
+          <button style={s.btnG} onClick={doMassEmail} disabled={loading || !selIds.size}>
+            {loading ? 'Sending...' : `\ud83d\udce4 Send Campaign to ${selIds.size} Contacts`}
+          </button>
         </div>
       )}
 
       {tab === 3 && (
         <div style={s.card}>
-          <div style={s.cardT}>⏰ Schedule Follow-up Sequences</div>
-          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 14 }}>Creates a 4-touch drip: LinkedIn connection (day 0) → Follow-up (day 3) → Cold email (day 7) → Final nudge (day 14).</p>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-            <button style={s.btnSm} onClick={selAll}>Select All</button>
-            <button style={s.btnSm} onClick={selNone}>Deselect All</button>
-            <span style={{ fontSize: 13, color: '#7a8ba6', alignSelf: 'center' }}>{selIds.size} selected</span>
+          <div style={s.cardT}>\u23f0 Schedule Follow-up Sequences</div>
+          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 14 }}>4-touch drip: LinkedIn (day 0) \u2192 Follow-up (day 3) \u2192 Cold email (day 7) \u2192 Final nudge (day 14).</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <button style={s.btnSm} onClick={selAll}>All ({contacts.length})</button>
+            <button style={s.btnSm} onClick={selNone}>None</button>
+            <span style={{ fontSize: 13, color: '#7a8ba6' }}>{selIds.size} selected</span>
           </div>
-          <button style={s.btn} onClick={doSchedule} disabled={loading || !selIds.size}>{loading ? 'Scheduling...' : `⏰ Schedule ${selIds.size} Sequences`}</button>
+          <button style={s.btn} onClick={doSchedule} disabled={loading || !selIds.size}>
+            {loading ? 'Scheduling...' : `\u23f0 Schedule ${selIds.size} Sequences`}
+          </button>
         </div>
       )}
 
       {contacts.length > 0 && (
         <div style={s.card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={s.cardT} style2={{ marginBottom: 0 }}>Contact Pipeline ({contacts.length})</div>
+            <div style={s.cardT}>Contact Pipeline ({contacts.length})</div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button style={s.btnSm} onClick={selAll}>All</button>
               <button style={s.btnSm} onClick={selWithEmail}>With Email</button>
               <button style={s.btnSm} onClick={selNone}>None</button>
             </div>
           </div>
-          <div style={{ overflowX: 'auto' as const, maxHeight: 400, overflowY: 'auto' as const }}>
+          <div style={{ overflowX: 'auto' as const, maxHeight: 420, overflowY: 'auto' as const }}>
             <table style={s.table}>
               <thead><tr>
-                <th style={s.th}></th><th style={s.th}>Name</th><th style={s.th}>Company</th><th style={s.th}>Role</th>
-                <th style={s.th}>Email</th><th style={s.th}>Country</th><th style={s.th}>Source</th>
+                <th style={s.th}></th><th style={s.th}>Name</th><th style={s.th}>Company</th>
+                <th style={s.th}>Role</th><th style={s.th}>Email</th><th style={s.th}>Country</th><th style={s.th}>Source</th>
               </tr></thead>
               <tbody>{contacts.map(c => (
                 <tr key={c.id} style={{ background: selIds.has(c.id!) ? '#0d1f3c' : 'transparent' }}>
                   <td style={s.td}><input type="checkbox" checked={selIds.has(c.id!)} onChange={() => toggleSel(c.id!)} /></td>
                   <td style={s.td}>{c.first_name} {c.last_name}</td>
                   <td style={s.td}>{c.company}</td>
-                  <td style={s.td} style2={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.role}</td>
-                  <td style={s.td}>{c.email ? <span style={{ color: '#38c9a0' }}>{c.email}</span> : <span style={{ color: '#f59e0b', fontSize: 11 }}>⚠ missing</span>}</td>
+                  <td style={s.td}>{c.role}</td>
+                  <td style={s.td}>{c.email ? <span style={{ color: '#38c9a0' }}>{c.email}</span> : <span style={{ color: '#f59e0b', fontSize: 11 }}>\u26a0 missing</span>}</td>
                   <td style={s.td}>{c.country}</td>
                   <td style={s.td}><span style={{ fontSize: 10, background: '#1e2d45', padding: '2px 7px', borderRadius: 10 }}>{c.source}</span></td>
                 </tr>
