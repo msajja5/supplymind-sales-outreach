@@ -45,23 +45,20 @@ const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trad
 const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy','Poland','Finland'];
 const TABS = ['Find Leads','Upload CSV','Mass Email','Follow-up Sequences'];
 const SUBJECT_DEFAULT = 'Quick question about CBAM compliance - SupplyMind AI';
-const BODY_DEFAULT = 'Hi {{first_name}},
-
-Managing CBAM compliance across dozens of suppliers is a growing operational burden for companies like {{company}}.
-
-SupplyMind AI automates the entire process - supplier data collection, carbon calculations, and CBAM report generation - saving your team weeks of manual work.
-
-Would it make sense to spend 20 minutes exploring how this could work for {{company}}?
-
-Best,
-Manjunath
-SupplyMind AI | supplymindai.com';
-const HUNTER_PH = 'Siemens
-BASF
-Philips
-ThyssenKrupp
-Bosch
-Schneider Electric';
+const BODY_DEFAULT = [
+  'Hi {{first_name}},',
+  '',
+  'Managing CBAM compliance across dozens of suppliers is a growing burden for companies like {{company}}.',
+  '',
+  'SupplyMind AI automates supplier data collection, carbon calculations, and CBAM report generation - saving your team weeks of manual work.',
+  '',
+  'Would it make sense to spend 20 minutes exploring how this could work for {{company}}?',
+  '',
+  'Best,',
+  'Manjunath',
+  'SupplyMind AI | supplymindai.com',
+].join('\n');
+const HUNTER_PH = ['Siemens','BASF','Philips','ThyssenKrupp','Bosch','Schneider Electric'].join('\n');
 
 export default function Outreach() {
   const [tab, setTab] = useState(0);
@@ -124,7 +121,6 @@ export default function Outreach() {
   const selAll = () => setSelIds(new Set(contacts.map(c => c.id!).filter(Boolean)));
   const selNone = () => setSelIds(new Set());
   const selWithEmail = () => setSelIds(new Set(contacts.filter(c => c.email && c.id).map(c => c.id!)));
-
   const confirmDelete = (mode: 'selected'|'all') => { setDeleteMode(mode); setShowDeleteModal(true); };
 
   const doDelete = async () => {
@@ -168,8 +164,7 @@ export default function Outreach() {
   };
 
   const doHunter = async () => {
-    const companies = hunterCompanies.split('
-').map((c: string) => c.trim()).filter(Boolean);
+    const companies = hunterCompanies.split('\n').map((c: string) => c.trim()).filter(Boolean);
     if (!companies.length) return notify('Enter at least one company name', true);
     setLoading(true);
     notify('Searching Hunter.io for ' + companies.length + ' companies...');
@@ -190,11 +185,7 @@ export default function Outreach() {
   };
 
   const parseCsv = (text: string): { contacts: Contact[]; error: string } => {
-    const lines = text.replace(/
-/g,'
-').replace(//g,'
-').trim().split('
-');
+    const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim().split('\n');
     if (lines.length < 2) return { contacts: [], error: 'CSV must have header + at least one data row' };
     const parseLine = (line: string) => {
       const r: string[] = []; let cur = ''; let inQ = false;
@@ -205,12 +196,12 @@ export default function Outreach() {
       }
       r.push(cur.trim()); return r;
     };
-    const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[s-/]+/g,'_').replace(/[^a-z0-9_]/g,''));
+    const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[\s\-\/]+/g,'_').replace(/[^a-z0-9_]/g,''));
     const hasName = headers.some(h => ['first_name','firstname','first','name','full_name'].includes(h));
     const hasEmail = headers.some(h => h.includes('email'));
     const hasCompany = headers.some(h => ['company','organization','account','company_name'].includes(h));
     if (!hasName && !hasEmail && !hasCompany)
-      return { contacts: [], error: 'File does not look like a contact list. Expected columns: first_name, last_name, company, email, role, country' };
+      return { contacts: [], error: 'Expected columns: first_name, last_name, company, email, role, country' };
     const contacts: Contact[] = [];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim(); if (!line) continue;
@@ -229,7 +220,7 @@ export default function Outreach() {
       };
       if ((c.first_name && c.company) || c.email) contacts.push(c);
     }
-    if (!contacts.length) return { contacts: [], error: 'No valid rows found. Each row needs (first_name + company) or an email.' };
+    if (!contacts.length) return { contacts: [], error: 'No valid rows found.' };
     return { contacts, error: '' };
   };
 
@@ -264,7 +255,7 @@ export default function Outreach() {
     notify('Sending to ' + ids.length + ' contacts...');
     const d = await call('send_mass_email', { contact_ids: ids, subject, body_template: bodyText, from_name: fromName, from_email: fromEmail });
     if (d.error) notify('Email error: ' + d.error, true);
-    else if (d.note) notify((d.logged || 0) + ' emails logged (no Resend key). ' + d.note);
+    else if (d.note) notify((d.logged || 0) + ' emails logged. ' + d.note);
     else notify('Sent ' + d.sent + ' emails!');
     await loadAll(); setLoading(false);
   };
@@ -342,11 +333,11 @@ export default function Outreach() {
             <div style={{ fontSize: 16, fontWeight: 700, color: '#e74c3c', marginBottom: 10 }}>Confirm Delete</div>
             <div style={{ color: '#a0b0c0', fontSize: 13, marginBottom: 20 }}>
               {deleteMode === 'all'
-                ? 'Permanently delete ALL ' + contacts.length + ' contacts, messages and sequences? Cannot be undone.'
-                : 'Permanently delete ' + selIds.size + ' selected contacts and their data? Cannot be undone.'}
+                ? 'Permanently delete ALL ' + contacts.length + ' contacts? Cannot be undone.'
+                : 'Permanently delete ' + selIds.size + ' selected contacts? Cannot be undone.'}
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button style={s.btnR} onClick={doDelete}>Yes, Delete Permanently</button>
+              <button style={s.btnR} onClick={doDelete}>Yes, Delete</button>
               <button style={s.btnSm} onClick={() => setShowDeleteModal(false)}>Cancel</button>
             </div>
           </div>
@@ -382,27 +373,20 @@ export default function Outreach() {
         <div>
           <div style={s.card}>
             <div style={s.cardT}>Hunter.io - Find Leads by Company (FREE)</div>
-            <div style={s.info}>Enter company names below. Hunter finds verified work emails for matching job titles. Requires Hunter API key in Settings.</div>
+            <div style={s.info}>Enter company names, one per line. Hunter finds verified work emails. Requires Hunter API key in Settings.</div>
             <label style={s.label}>Company names (one per line)</label>
             <textarea style={s.textarea} value={hunterCompanies} onChange={e => setHunterCompanies(e.target.value)} placeholder={HUNTER_PH} />
             <label style={s.label}>Filter by job title (optional)</label>
             <Chips items={JOB_TITLES} selected={titles} onToggle={toggleTitle} />
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <button style={s.btnA} onClick={doHunter} disabled={loading}>
-                {loading ? 'Searching...' : 'Search Hunter.io'}
-              </button>
-              <span style={{ fontSize: 12, color: '#4a5a6a' }}>Finds verified work emails automatically</span>
-            </div>
+            <button style={s.btnA} onClick={doHunter} disabled={loading}>{loading ? 'Searching...' : 'Search Hunter.io'}</button>
           </div>
           <div style={s.card}>
-            <div style={s.cardT}>Apollo.io - Search by Role + Country (requires paid plan)</div>
+            <div style={s.cardT}>Apollo.io - Search by Role + Country (paid plan required)</div>
             <label style={s.label}>Job titles</label>
             <Chips items={JOB_TITLES} selected={titles} onToggle={toggleTitle} />
             <label style={s.label}>Countries</label>
             <Chips items={COUNTRIES} selected={countries} onToggle={toggleCountry} />
-            <button style={s.btn} onClick={doApollo} disabled={loading}>
-              {loading ? 'Searching...' : 'Search Apollo'}
-            </button>
+            <button style={s.btn} onClick={doApollo} disabled={loading}>{loading ? 'Searching...' : 'Search Apollo'}</button>
           </div>
         </div>
       )}
@@ -410,15 +394,13 @@ export default function Outreach() {
       {tab === 1 && (
         <div style={s.card}>
           <div style={s.cardT}>Upload Contact List (CSV)</div>
-          <div style={s.info}>Accepted columns: first_name, last_name, company, role, email, country, linkedin_url. Compatible with LinkedIn Sales Navigator, Apollo, Hunter, Lusha exports. Each row needs (first_name + company) OR an email.</div>
+          <div style={s.info}>Accepted: first_name, last_name, company, role, email, country, linkedin_url. Each row needs (first_name + company) OR an email.</div>
           {csvError && <div style={s.err}>{csvError}</div>}
           <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={onFileChange} />
           <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
             <button style={s.btn} onClick={() => { setCsvPreview([]); setCsvError(''); fileRef.current?.click(); }}>Choose CSV File</button>
             {csvPreview.length > 0 && (
-              <button style={s.btnG} onClick={doImportCsv} disabled={loading}>
-                {loading ? 'Importing...' : 'Import ' + csvPreview.length + ' Contacts'}
-              </button>
+              <button style={s.btnG} onClick={doImportCsv} disabled={loading}>{loading ? 'Importing...' : 'Import ' + csvPreview.length + ' Contacts'}</button>
             )}
           </div>
           {csvPreview.length > 0 && (
@@ -428,7 +410,7 @@ export default function Outreach() {
                   <th style={s.th}>First</th><th style={s.th}>Last</th><th style={s.th}>Company</th>
                   <th style={s.th}>Role</th><th style={s.th}>Email</th><th style={s.th}>Country</th>
                 </tr></thead>
-                <tbody>{csvPreview.slice(0, 20).map((c, i) => (
+                <tbody>{csvPreview.slice(0,20).map((c,i) => (
                   <tr key={i}>
                     <td style={s.td}>{c.first_name}</td><td style={s.td}>{c.last_name}</td>
                     <td style={s.td}>{c.company}</td><td style={s.td}>{c.role}</td>
@@ -446,7 +428,7 @@ export default function Outreach() {
       {tab === 2 && (
         <div style={s.card}>
           <div style={s.cardT}>Mass Personalised Email Campaign</div>
-          <div style={s.info}>Tokens: {'{{first_name}}'}, {'{{company}}'}, {'{{role}}'} - auto-replaced per contact before sending.</div>
+          <div style={s.info}>Tokens: {'{{first_name}}'}, {'{{company}}'}, {'{{role}}'} are replaced per contact before sending.</div>
           <div style={s.row2}>
             <div>
               <label style={s.label}>Sender Display Name</label>
@@ -461,7 +443,7 @@ export default function Outreach() {
           <input style={s.input} value={subject} onChange={e => setSubject(e.target.value)} />
           <label style={s.label}>Email body</label>
           <textarea style={{ ...s.textarea, minHeight: 220 }} value={bodyText} onChange={e => setBodyText(e.target.value)} />
-          <div style={s.info}>Without a Resend API key (Settings tab), emails are logged only - no real delivery. Add Resend key for real sending (free 3,000/month).</div>
+          <div style={s.info}>Add Resend API key in Settings for real delivery (free 3,000/month). Without it, emails are logged only.</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' as const, alignItems: 'center' }}>
             <button style={s.btnSm} onClick={selAll}>All ({contacts.length})</button>
             <button style={s.btnSm} onClick={selWithEmail}>With Email ({contacts.filter(c => c.email).length})</button>
