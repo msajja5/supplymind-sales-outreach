@@ -10,11 +10,11 @@ interface Contact {
 const s: Record<string, React.CSSProperties> = {
   wrap: { color: '#e8ecf4', fontFamily: 'Inter, sans-serif' },
   grid4: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 },
-  stat: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 10, padding: '16px 20px', textAlign: 'center' as const },
+  stat: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 10, padding: '16px 20px', textAlign: 'center' },
   statN: { fontSize: 28, fontWeight: 700, color: '#4f8ef7' },
   statL: { fontSize: 12, color: '#7a8ba6', marginTop: 2 },
   statS: { fontSize: 11, color: '#4a5a6a' },
-  tabs: { display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' as const },
+  tabs: { display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' },
   tab: { padding: '8px 14px', borderRadius: 8, border: '1px solid #2a3348', background: 'transparent', color: '#7a8ba6', cursor: 'pointer', fontSize: 13 },
   tabA: { padding: '8px 14px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   card: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 12, padding: 22, marginBottom: 14 },
@@ -23,34 +23,38 @@ const s: Record<string, React.CSSProperties> = {
   ok: { background: '#0f1a10', border: '1px solid #38c9a055', borderRadius: 8, padding: '10px 14px', color: '#38c9a0', fontSize: 13, marginBottom: 12 },
   warn: { background: '#1a1200', border: '1px solid #f59e0b55', borderRadius: 8, padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   label: { fontSize: 12, color: '#7a8ba6', marginBottom: 4, display: 'block' },
-  input: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, marginBottom: 10 },
-  textarea: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, minHeight: 110, resize: 'vertical' as const, marginBottom: 10 },
+  input: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box', marginBottom: 10 },
+  textarea: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box', minHeight: 110, resize: 'vertical', marginBottom: 10 },
   btn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnG: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#38c9a0', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnA: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnSm: { padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1e2d45', color: '#e8ecf4', cursor: 'pointer', fontSize: 12 },
-  chip: { display: 'inline-block', padding: '4px 10px', borderRadius: 20, border: '1px solid #2a3348', fontSize: 12, cursor: 'pointer', margin: '0 4px 4px 0', userSelect: 'none' as const },
-  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 12 },
-  th: { padding: '8px 10px', textAlign: 'left' as const, color: '#7a8ba6', borderBottom: '1px solid #1e2d45', fontSize: 11 },
-  td: { padding: '7px 10px', borderBottom: '1px solid #0f1830', color: '#e8ecf4', maxWidth: 180, overflow: 'hidden' as const, textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const },
+  chip: { display: 'inline-block', padding: '4px 10px', borderRadius: 20, border: '1px solid #2a3348', fontSize: 12, cursor: 'pointer', margin: '0 4px 4px 0', userSelect: 'none' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
+  th: { padding: '8px 10px', textAlign: 'left', color: '#7a8ba6', borderBottom: '1px solid #1e2d45', fontSize: 11 },
+  td: { padding: '7px 10px', borderBottom: '1px solid #0f1830', color: '#e8ecf4', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
-  info: { background: '#0a1020', border: '1px solid #1e2d45', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#4a5a6a', marginBottom: 12 },
+  info: { background: '#0a1020', border: '1px solid #1e2d45', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#5a7a9a', marginBottom: 12 },
 };
 
 const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trade Compliance Manager','Sustainability Manager','VP ESG','Chief Sustainability Officer','Head of Trade Finance','Climate Director','Carbon Accounting Manager'];
 const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy','Poland','Finland'];
 const TABS = ['Find Leads','Upload CSV','Mass Email','Follow-up Sequences'];
 const SUBJECT_DEFAULT = 'Quick question about CBAM compliance - SupplyMind AI';
-const BODY_DEFAULT = ['Hi {{first_name}},','','Managing CBAM compliance across dozens of suppliers is a growing operational burden for companies like {{company}}.','','SupplyMind AI automates the entire process - supplier data collection, carbon calculations, and CBAM report generation - saving your team weeks of manual work.','','Would it make sense to spend 20 minutes exploring how this could work for {{company}}?','','Best,','Manjunath','SupplyMind AI | supplymindai.com'].join('
-');
-const HUNTER_PH = 'Siemens
-BASF
-Philips
-SAP
-ThyssenKrupp
-RWE
-Schneider Electric
-Siemens Energy';
+const BODY_DEFAULT = [
+  'Hi {{first_name}},',
+  '',
+  'Managing CBAM compliance across dozens of suppliers is a growing operational burden for companies like {{company}}.',
+  '',
+  'SupplyMind AI automates the entire process - supplier data collection, carbon calculations, and CBAM report generation - saving your team weeks of manual work.',
+  '',
+  'Would it make sense to spend 20 minutes exploring how this could work for {{company}}?',
+  '',
+  'Best,',
+  'Manjunath',
+  'SupplyMind AI | supplymindai.com',
+].join('\n');
+const HUNTER_PH = 'Siemens\nBASF\nPhilips\nSAP\nThyssenKrupp\nRWE\nSchneider Electric\nBosch';
 
 export default function Outreach() {
   const [tab, setTab] = useState(0);
@@ -115,8 +119,7 @@ export default function Outreach() {
   };
 
   const doHunter = async () => {
-    const companies = hunterCompanies.split('
-').map((c: string) => c.trim()).filter(Boolean);
+    const companies = hunterCompanies.split('\n').map((c: string) => c.trim()).filter(Boolean);
     if (!companies.length) return notify('Enter at least one company name', true);
     setLoading(true);
     notify('Searching Hunter.io for ' + companies.length + ' companies...');
@@ -136,92 +139,59 @@ export default function Outreach() {
     await loadAll(); setLoading(false);
   };
 
-  // CSV parser - robust, handles quoted fields, validates contact rows
-  const parseCsv = (text: string): { contacts: Contact[]; errors: string[] } => {
-    const errors: string[] = [];
-    // Normalize line endings
-    const lines = text.replace(/
-/g, '
-').replace(//g, '
-').trim().split('
-');
-    if (lines.length < 2) return { contacts: [], errors: ['CSV must have at least a header row and one data row'] };
-    
-    // Parse CSV line respecting quoted fields
+  const parseCsv = (text: string): { contacts: Contact[]; error: string } => {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n');
+    if (lines.length < 2) return { contacts: [], error: 'CSV must have a header row and at least one data row' };
     const parseLine = (line: string): string[] => {
-      const result: string[] = [];
-      let current = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        if (line[i] === '"') { inQuotes = !inQuotes; }
-        else if (line[i] === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-        else { current += line[i]; }
+      const result: string[] = []; let cur = ''; let inQ = false;
+      for (const ch of line) {
+        if (ch === '"') { inQ = !inQ; }
+        else if (ch === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+        else { cur += ch; }
       }
-      result.push(current.trim());
-      return result;
+      result.push(cur.trim()); return result;
     };
-
-    const rawHeaders = parseLine(lines[0]);
-    const headers = rawHeaders.map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/__+/g, '_'));
-    
-    // Check if this looks like a contact CSV (must have name or email column)
-    const hasName = headers.some(h => h.includes('first') || h.includes('name') || h.includes('first_name'));
+    const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[\s\-\/]+/g, '_').replace(/[^a-z0-9_]/g, ''));
+    const hasName = headers.some(h => ['first_name','firstname','first','name','full_name'].includes(h));
     const hasEmail = headers.some(h => h.includes('email'));
-    const hasCompany = headers.some(h => h.includes('company') || h.includes('organization'));
-    
+    const hasCompany = headers.some(h => ['company','organization','account','company_name'].includes(h));
     if (!hasName && !hasEmail && !hasCompany) {
-      return { contacts: [], errors: ['This does not look like a contact CSV. Expected columns like: first_name, last_name, email, company, role'] };
+      return { contacts: [], error: 'File does not look like a contact list. Expected columns: first_name, last_name, company, email, role, country' };
     }
-
     const contacts: Contact[] = [];
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+      const line = lines[i].trim(); if (!line) continue;
       const vals = parseLine(line);
       const row: Record<string, string> = {};
       headers.forEach((h, idx) => { row[h] = (vals[idx] || '').replace(/^"|"$/g, '').trim(); });
-      
-      const contact: Contact = {
-        first_name: row.first_name || row.firstname || row.first || row.name?.split(' ')[0] || '',
-        last_name: row.last_name || row.lastname || row.last || row.name?.split(' ').slice(1).join(' ') || '',
-        company: row.company || row.organization || row.company_name || row.account || '',
+      const c: Contact = {
+        first_name: row.first_name || row.firstname || row.first || (row.name || row.full_name || '').split(' ')[0] || '',
+        last_name: row.last_name || row.lastname || row.last || (row.name || row.full_name || '').split(' ').slice(1).join(' ') || '',
+        company: row.company || row.organization || row.account || row.company_name || '',
         role: row.role || row.title || row.job_title || row.position || row.headline || '',
         email: row.email || row.email_address || row.work_email || '',
         linkedin_url: row.linkedin || row.linkedin_url || row.profile_url || '',
         country: row.country || row.location || row.geography || '',
         source: 'csv',
       };
-      
-      // Only import if we have at least a name+company OR an email
-      if ((contact.first_name && contact.company) || contact.email) {
-        contacts.push(contact);
-      }
+      if ((c.first_name && c.company) || c.email) contacts.push(c);
     }
-    
-    if (contacts.length === 0) {
-      errors.push('No valid contact rows found. Make sure CSV has columns: first_name, last_name, company, email');
-    }
-    return { contacts, errors };
+    if (!contacts.length) return { contacts: [], error: 'No valid rows found. Each row needs at least (first_name + company) or an email address.' };
+    return { contacts, error: '' };
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCsvError('');
-    setCsvPreview([]);
-    if (!file.name.endsWith('.csv')) { setCsvError('Please upload a .csv file'); return; }
+    const file = e.target.files?.[0]; if (!file) return;
+    setCsvError(''); setCsvPreview([]);
+    if (!file.name.toLowerCase().endsWith('.csv')) { setCsvError('Please upload a .csv file'); return; }
     const reader = new FileReader();
     reader.onload = ev => {
-      const text = ev.target?.result as string;
-      const { contacts, errors } = parseCsv(text);
-      if (errors.length) { setCsvError(errors.join('. ')); }
-      if (contacts.length) {
-        setCsvPreview(contacts);
-        notify('Parsed ' + contacts.length + ' valid contacts. Click Import to save to pipeline.');
-      }
+      const { contacts, error } = parseCsv(ev.target?.result as string);
+      if (error) { setCsvError(error); return; }
+      setCsvPreview(contacts);
+      notify('Parsed ' + contacts.length + ' valid contacts. Review below then click Import.');
     };
     reader.readAsText(file);
-    // Reset file input so same file can be re-uploaded
     e.target.value = '';
   };
 
@@ -242,7 +212,7 @@ export default function Outreach() {
     notify('Sending campaign to ' + ids.length + ' contacts...');
     const d = await call('send_mass_email', { contact_ids: ids, subject, body_template: bodyText, from_name: fromName });
     if (d.error) { notify('Email error: ' + d.error, true); }
-    else if (d.note) { notify(d.logged + ' emails logged (no Resend key). ' + d.note); }
+    else if (d.note) { notify((d.logged || 0) + ' emails logged. Add Resend key in Settings to send real emails.'); }
     else { notify('Sent ' + d.sent + ' emails successfully!'); }
     await loadAll(); setLoading(false);
   };
@@ -279,7 +249,7 @@ export default function Outreach() {
 
       {stats.missing > 0 && (
         <div style={s.warn}>
-          <span style={{ fontSize: 13, color: '#f59e0b' }}>Warning: {stats.missing} contacts missing email</span>
+          <span style={{ fontSize: 13, color: '#f59e0b' }}>Warning: {stats.missing} contacts missing email address</span>
           <button style={{ ...s.btnA, padding: '6px 14px', fontSize: 12 }} onClick={doHunterEnrich} disabled={loading}>
             {loading ? 'Finding emails...' : 'Find Emails via Hunter'}
           </button>
@@ -295,11 +265,11 @@ export default function Outreach() {
       {tab === 0 && (
         <div>
           <div style={s.card}>
-            <div style={s.cardT}>Hunter.io - Find Leads by Company Name (FREE - Recommended)</div>
-            <div style={s.info}>Enter company names below. Hunter finds verified work emails for people at those companies matching your selected job titles.</div>
+            <div style={s.cardT}>Hunter.io - Find Leads by Company (FREE - Recommended)</div>
+            <div style={s.info}>Enter target company names. Hunter.io finds verified work emails for people matching your selected job titles. No paid plan needed.</div>
             <label style={s.label}>Company names (one per line)</label>
             <textarea style={s.textarea} value={hunterCompanies} onChange={e => setHunterCompanies(e.target.value)} placeholder={HUNTER_PH} />
-            <label style={s.label}>Filter by job title (click to select)</label>
+            <label style={s.label}>Filter by job title (click to select/deselect)</label>
             <Chips items={JOB_TITLES} selected={titles} onToggle={toggleTitle} />
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button style={s.btnA} onClick={doHunter} disabled={loading}>
@@ -309,7 +279,7 @@ export default function Outreach() {
             </div>
           </div>
           <div style={s.card}>
-            <div style={s.cardT}>Apollo.io - Search by Role + Country (paid plan required)</div>
+            <div style={s.cardT}>Apollo.io - Search by Role and Country (paid plan required)</div>
             <label style={s.label}>Job titles</label>
             <Chips items={JOB_TITLES} selected={titles} onToggle={toggleTitle} />
             <label style={s.label}>Countries</label>
@@ -325,9 +295,9 @@ export default function Outreach() {
         <div style={s.card}>
           <div style={s.cardT}>Upload Contact List (CSV)</div>
           <div style={s.info}>
-            <strong style={{ color: '#e8ecf4' }}>Accepted columns:</strong> first_name, last_name, company, role / job_title, email, country, linkedin_url<br />
-            <strong style={{ color: '#e8ecf4' }}>Compatible exports:</strong> LinkedIn Sales Navigator, Apollo.io, Hunter.io, Lusha, ZoomInfo<br />
-            <strong style={{ color: '#e8ecf4' }}>Required:</strong> At least (first_name + company) OR email per row
+            <strong style={{ color: '#c0d0e8' }}>Accepted columns:</strong> first_name, last_name, company, role, email, country, linkedin_url<br />
+            <strong style={{ color: '#c0d0e8' }}>Compatible with:</strong> LinkedIn Sales Navigator, Apollo.io, Hunter.io, Lusha, ZoomInfo exports<br />
+            <strong style={{ color: '#c0d0e8' }}>Required per row:</strong> (first_name + company) OR an email address
           </div>
           {csvError && <div style={s.err}>{csvError}</div>}
           <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={onFileChange} />
@@ -340,7 +310,7 @@ export default function Outreach() {
             )}
           </div>
           {csvPreview.length > 0 && (
-            <div style={{ overflowX: 'auto' as const, maxHeight: 300, overflowY: 'auto' as const }}>
+            <div style={{ overflowX: 'auto', maxHeight: 300, overflowY: 'auto' }}>
               <table style={s.table}>
                 <thead><tr>
                   <th style={s.th}>First Name</th><th style={s.th}>Last Name</th><th style={s.th}>Company</th>
@@ -376,10 +346,10 @@ export default function Outreach() {
               <input style={s.input} value={subject} onChange={e => setSubject(e.target.value)} />
             </div>
           </div>
-          <label style={s.label}>Email body - use tokens: first_name, company, role (wrapped in double curly braces)</label>
+          <label style={s.label}>Email body - personalisation tokens: {"{{first_name}}"}, {"{{company}}"}, {"{{role}}"}</label>
           <textarea style={{ ...s.textarea, minHeight: 220 }} value={bodyText} onChange={e => setBodyText(e.target.value)} />
-          <div style={s.info}>Add Resend API key in Settings to send real emails (free 3,000/month at resend.com). Without it, outreach is logged only.</div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' as const, alignItems: 'center' }}>
+          <div style={s.info}>Add your Resend API key in Settings to send real emails (free 3,000/month at resend.com). Without it, outreach is logged for tracking only.</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
             <button style={s.btnSm} onClick={selAll}>All ({contacts.length})</button>
             <button style={s.btnSm} onClick={selWithEmail}>With Email ({contacts.filter(c => c.email).length})</button>
             <button style={s.btnSm} onClick={selNone}>None</button>
@@ -416,7 +386,7 @@ export default function Outreach() {
               <button style={s.btnSm} onClick={selNone}>None</button>
             </div>
           </div>
-          <div style={{ overflowX: 'auto' as const, maxHeight: 420, overflowY: 'auto' as const }}>
+          <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }}>
             <table style={s.table}>
               <thead><tr>
                 <th style={s.th}></th><th style={s.th}>Name</th><th style={s.th}>Company</th>
@@ -439,10 +409,10 @@ export default function Outreach() {
       )}
 
       {contacts.length === 0 && (
-        <div style={{ ...s.card, textAlign: 'center' as const, padding: 40 }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>0</div>
+        <div style={{ ...s.card, textAlign: 'center', padding: 40 }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>0</div>
           <div style={{ color: '#7a8ba6', fontSize: 14, marginBottom: 8 }}>No contacts in pipeline yet</div>
-          <div style={{ color: '#4a5a6a', fontSize: 13 }}>Use Find Leads tab to search Hunter.io, or Upload CSV to import your list</div>
+          <div style={{ color: '#4a5a6a', fontSize: 13 }}>Use Find Leads tab to search Hunter.io by company name, or Upload CSV to import your own list</div>
         </div>
       )}
     </div>
