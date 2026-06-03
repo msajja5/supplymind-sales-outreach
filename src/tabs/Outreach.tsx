@@ -35,6 +35,7 @@ const s: Record<string, React.CSSProperties> = {
   textarea: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, minHeight: 90, resize: 'vertical' as const, marginBottom: 12 },
   btn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnG: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#38c9a0', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  btnH: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnSm: { padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1e2d45', color: '#e8ecf4', cursor: 'pointer', fontSize: 12 },
   chip: { display: 'inline-block', padding: '4px 10px', borderRadius: 20, border: '1px solid #2a3348', fontSize: 12, cursor: 'pointer', margin: '0 4px 4px 0', userSelect: 'none' as const },
   table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 13 },
@@ -52,6 +53,7 @@ export default function Outreach() {
   const [msg, setMsg] = useState('');
   const [isErr, setIsErr] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hunterLoading, setHunterLoading] = useState(false);
   const [stats, setStats] = useState({ found: 0, pipeline: 0, emails: 0, seqs: 0 });
   const [titles, setTitles] = useState<string[]>(['Head of Sustainability','CBAM Manager','ESG Director']);
   const [countries, setCountries] = useState<string[]>(['Netherlands','Belgium','Germany']);
@@ -102,7 +104,7 @@ SupplyMind AI';
     return r.json();
   };
 
-  const notify = (text: string, err = false) => { setMsg(text); setIsErr(err); setTimeout(() => setMsg(''), 5000); };
+  const notify = (text: string, err = false) => { setMsg(text); setIsErr(err); setTimeout(() => setMsg(''), 6000); };
   const toggleTitle = (t: string) => setTitles(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
   const toggleCountry = (c: string) => setCountries(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   const toggleSel = (id: string) => setSelIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -133,6 +135,14 @@ SupplyMind AI';
     setLoading(false);
   };
 
+  const doHunterEnrich = async () => {
+    setHunterLoading(true);
+    const d = await call('hunter_enrich_pipeline');
+    if (d.error) { notify(d.error, true); } else { notify(`Hunter found ${d.enriched || 0} emails out of ${d.total_missing || 0} contacts missing email`); }
+    await loadContacts();
+    setHunterLoading(false);
+  };
+
   const doMassEmail = async () => {
     const ids = Array.from(selIds);
     if (!ids.length) return notify('Select contacts first', true);
@@ -151,6 +161,8 @@ SupplyMind AI';
     await loadStats(); setLoading(false);
   };
 
+  const missingEmail = contacts.filter(c => !c.email).length;
+
   return (
     <div style={s.wrap}>
       <div style={s.stats}>
@@ -159,6 +171,15 @@ SupplyMind AI';
         <div style={s.stat}><div style={s.statN}>{stats.emails}</div><div style={s.statL}>Emails Sent</div><div style={s.statSub}>logged</div></div>
         <div style={s.stat}><div style={s.statN}>{stats.seqs}</div><div style={s.statL}>Sequences</div><div style={s.statSub}>active</div></div>
       </div>
+
+      {missingEmail > 0 && (
+        <div style={{ background: '#1a1200', border: '1px solid #f59e0b55', borderRadius: 8, padding: '10px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ {missingEmail} contacts missing email address</span>
+          <button style={s.btnH} onClick={doHunterEnrich} disabled={hunterLoading}>
+            {hunterLoading ? 'Finding emails...' : '🔍 Find Emails (Hunter)'}
+          </button>
+        </div>
+      )}
 
       <div style={s.tabs}>
         {TABS.map((t, i) => <button key={t} style={i === tab ? s.tabA : s.tab} onClick={() => setTab(i)}>{t}</button>)}
@@ -256,7 +277,12 @@ SupplyMind AI';
                     <td style={s.td}>{c.first_name} {c.last_name}</td>
                     <td style={s.td}>{c.company}</td>
                     <td style={s.td}>{c.role}</td>
-                    <td style={s.td}>{c.email || '—'}</td>
+                    <td style={s.td}>
+                      {c.email
+                        ? <span style={{ color: '#38c9a0' }}>{c.email}</span>
+                        : <span style={{ color: '#f59e0b', fontSize: 11 }}>⚠ missing</span>
+                      }
+                    </td>
                     <td style={s.td}>{c.country}</td>
                     <td style={s.td}><span style={{ fontSize: 11, background: '#1e2d45', padding: '2px 7px', borderRadius: 10 }}>{c.source}</span></td>
                   </tr>
