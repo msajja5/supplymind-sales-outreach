@@ -1,348 +1,270 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Card, Label, Btn, BtnRow, Grid2, StatBar } from '../components/Card';
 
-const SUPABASE_URL: string = (import.meta as any).env.VITE_SUPABASE_URL;
-const ANON_KEY: string = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+const TABS = ['Find Contacts', 'Individual Outreach', 'Mass Email', 'Schedule Follow-ups'];
 
-const CBAM_TITLES = [
-  'Head of Sustainability', 'CBAM Manager', 'ESG Director', 'Trade Compliance Manager',
-  'Sustainability Manager', 'VP ESG', 'Chief Sustainability Officer', 'Head of Trade Finance',
-  'Climate Director', 'Carbon Accounting Manager',
-];
-const COUNTRIES = [
-  'Netherlands', 'Belgium', 'Germany', 'France', 'Denmark', 'Sweden', 'Austria', 'Switzerland', 'Spain', 'Italy',
-];
+interface Contact {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  company: string;
+  role: string;
+  email: string;
+  linkedin_url: string;
+  country: string;
+  source: string;
+  status?: string;
+}
 
-type Contact = {
-  first_name: string; last_name: string; company: string; role: string;
-  email: string; linkedin_url: string; country: string; source?: string;
-  email_confidence?: number;
+const s: Record<string, React.CSSProperties> = {
+  wrap: { color: '#e8ecf4', fontFamily: 'Inter, sans-serif' },
+  stats: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 },
+  stat: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 10, padding: '16px 20px', textAlign: 'center' as const },
+  statN: { fontSize: 28, fontWeight: 700, color: '#4f8ef7' },
+  statL: { fontSize: 12, color: '#7a8ba6', marginTop: 2 },
+  statSub: { fontSize: 11, color: '#4a5a6a' },
+  tabs: { display: 'flex', gap: 8, marginBottom: 20 },
+  tab: { padding: '8px 16px', borderRadius: 8, border: '1px solid #2a3348', background: 'transparent', color: '#7a8ba6', cursor: 'pointer', fontSize: 13 },
+  tabA: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  card: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 12, padding: 24, marginBottom: 16 },
+  cardTitle: { fontSize: 16, fontWeight: 700, color: '#e8ecf4', marginBottom: 16 },
+  err: { background: '#1a0f0f', border: '1px solid #c0392b55', borderRadius: 8, padding: '10px 14px', color: '#e74c3c', fontSize: 13, marginBottom: 14 },
+  ok: { background: '#0f1a10', border: '1px solid #38c9a055', borderRadius: 8, padding: '10px 14px', color: '#38c9a0', fontSize: 13, marginBottom: 14 },
+  label: { fontSize: 12, color: '#7a8ba6', marginBottom: 4, display: 'block' },
+  input: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, marginBottom: 12 },
+  textarea: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, minHeight: 90, resize: 'vertical' as const, marginBottom: 12 },
+  btn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  btnG: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#38c9a0', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  btnSm: { padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1e2d45', color: '#e8ecf4', cursor: 'pointer', fontSize: 12 },
+  chip: { display: 'inline-block', padding: '4px 10px', borderRadius: 20, border: '1px solid #2a3348', fontSize: 12, cursor: 'pointer', margin: '0 4px 4px 0', userSelect: 'none' as const },
+  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 13 },
+  th: { padding: '8px 10px', textAlign: 'left' as const, color: '#7a8ba6', borderBottom: '1px solid #1e2d45', fontSize: 12 },
+  td: { padding: '8px 10px', borderBottom: '1px solid #0f1830', color: '#e8ecf4' },
 };
 
-const MASS_BODY_DEFAULT = 'Hi {{first_name}},\n\nManaging CBAM compliance across dozens of suppliers is becoming a real operational challenge for companies like {{company}}.\n\nWe built SupplyMind AI to automate this — supplier data collection, carbon calculations, and CBAM report generation.\n\nWould a 20-min call this week make sense?\n\nBest,\nManjunath\nSupplyMind AI';
+const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trade Compliance Manager','Sustainability Manager','VP ESG','Chief Sustainability Officer','Head of Trade Finance','Climate Director','Carbon Accounting Manager'];
+const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy'];
 
 export default function Outreach() {
-  const [mode, setMode] = useState<'search' | 'individual' | 'mass' | 'followup'>('search');
-  const [results, setResults] = useState<Contact[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [tab, setTab] = useState(0);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selIds, setSelIds] = useState<Set<string>>(new Set());
+  const [msg, setMsg] = useState('');
+  const [isErr, setIsErr] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [log, setLog] = useState('');
-  const [stats, setStats] = useState({ found: 0, imported: 0, emailed: 0, sequenced: 0 });
-  const [titles, setTitles] = useState(['Head of Sustainability', 'CBAM Manager', 'ESG Director']);
-  const [countries, setCountries] = useState(['Netherlands', 'Belgium', 'Germany']);
-  const [page, setPage] = useState(1);
+  const [stats, setStats] = useState({ found: 0, pipeline: 0, emails: 0, seqs: 0 });
+  const [titles, setTitles] = useState<string[]>(['Head of Sustainability','CBAM Manager','ESG Director']);
+  const [countries, setCountries] = useState<string[]>(['Netherlands','Belgium','Germany']);
   const [apifyUrls, setApifyUrls] = useState('');
-  const [indiv, setIndiv] = useState<Contact>({ first_name: '', last_name: '', company: '', role: '', email: '', linkedin_url: '', country: '' });
-  const [indivMsg, setIndivMsg] = useState('');
   const [indivChannel, setIndivChannel] = useState('linkedin');
-  const [massSubject, setMassSubject] = useState('Quick question about CBAM readiness - SupplyMind AI');
+  const MASS_SUBJECT_DEFAULT = 'Quick question about CBAM readiness — SupplyMind AI';
+  const MASS_BODY_DEFAULT = 'Hi {{first_name}},
+
+Managing CBAM compliance across dozens of suppliers is becoming a real operational challenge for companies like {{company}}.
+
+SupplyMind AI automates the entire process — supplier data collection, carbon calculations, and CBAM report generation.
+
+Would it make sense to spend 20 minutes showing you how it works?
+
+Best,
+Manjunath
+SupplyMind AI';
+  const [massSubject, setMassSubject] = useState(MASS_SUBJECT_DEFAULT);
   const [massBody, setMassBody] = useState(MASS_BODY_DEFAULT);
-  const [fuTone, setFuTone] = useState('founder');
-  const [fuPain, setFuPain] = useState('Manual CBAM tracking, 200+ suppliers');
 
-  useEffect(() => { loadStats(); }, []);
-
-  const callEngine = async (payload: object) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await fetch(SUPABASE_URL + '/functions/v1/outreach-engine', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + session?.access_token,
-        'apikey': ANON_KEY,
-      },
-      body: JSON.stringify(payload),
-    });
-    return res.json();
-  };
+  useEffect(() => { loadStats(); loadContacts(); }, []);
 
   const loadStats = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [{ count: imp }, { count: em }, { count: sq }] = await Promise.all([
+    const [{ count: pipeline }, { count: emails }, { count: seqs }] = await Promise.all([
       supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
       supabase.from('messages').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'sent'),
-      supabase.from('sequences').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('sequences').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'active'),
     ]);
-    setStats(s => ({ ...s, imported: imp || 0, emailed: em || 0, sequenced: sq || 0 }));
+    setStats(st => ({ ...st, pipeline: pipeline || 0, emails: emails || 0, seqs: seqs || 0 }));
   };
 
-  const doSearch = async () => {
+  const loadContacts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from('contacts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(100);
+    if (data) setContacts(data);
+  };
+
+  const call = async (action: string, extra: Record<string, unknown> = {}) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/outreach-engine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    return r.json();
+  };
+
+  const notify = (text: string, err = false) => { setMsg(text); setIsErr(err); setTimeout(() => setMsg(''), 5000); };
+  const toggleTitle = (t: string) => setTitles(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
+  const toggleCountry = (c: string) => setCountries(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
+  const toggleSel = (id: string) => setSelIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const selAll = () => setSelIds(new Set(contacts.map(c => c.id!).filter(Boolean)));
+  const selNone = () => setSelIds(new Set());
+
+  const doApollo = async () => {
+    if (!titles.length || !countries.length) return notify('Select at least one title and country', true);
     setLoading(true);
-    setLog('Searching Apollo.io...');
-    const data = await callEngine({ action: 'apollo_search', titles, countries, page });
-    if (data.error) { setLog('Error: ' + data.error); setLoading(false); return; }
-    setResults(data.people || []);
-    setStats(s => ({ ...s, found: data.people?.length || 0 }));
-    setLog('Found ' + (data.people?.length || 0) + ' contacts (' + (data.total || 0) + ' total)');
+    const d = await call('apollo_search', { titles, countries });
+    if (d.error) { notify(d.error, true); setLoading(false); return; }
+    const imp = await call('import_contacts', { contacts: d.people || [] });
+    setStats(st => ({ ...st, found: d.total || 0 }));
+    notify(`Found ${d.people?.length || 0} contacts, imported ${imp.imported || 0} new to pipeline`);
+    await loadContacts(); await loadStats();
     setLoading(false);
   };
 
   const doApify = async () => {
     const urls = apifyUrls.split('\n').map((u: string) => u.trim()).filter(Boolean);
-    if (!urls.length) { setLog('Paste LinkedIn company URLs first'); return; }
+    if (!urls.length) return notify('Paste at least one LinkedIn URL', true);
     setLoading(true);
-    setLog('Scraping ' + urls.length + ' LinkedIn pages via Apify...');
-    const data = await callEngine({ action: 'apify_scrape', urls });
-    if (data.error) { setLog('Error: ' + data.error); setLoading(false); return; }
-    setResults(data.people || []);
-    setStats(s => ({ ...s, found: data.people?.length || 0 }));
-    setLog('Scraped ' + (data.people?.length || 0) + ' contacts');
+    const d = await call('apify_scrape', { urls });
+    if (d.error) { notify(d.error, true); setLoading(false); return; }
+    const imp = await call('import_contacts', { contacts: d.people || [] });
+    notify(`Scraped ${d.people?.length || 0} contacts, imported ${imp.imported || 0} new`);
+    await loadContacts(); await loadStats();
     setLoading(false);
   };
 
-  const verifyEmail = async (idx: number) => {
-    const c = results[idx];
-    setLog('Finding email for ' + c.first_name + '...');
-    const domain = c.company.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') + '.com';
-    const data = await callEngine({ action: 'hunter_verify', domain, first_name: c.first_name, last_name: c.last_name });
-    if (data.email) {
-      const updated = [...results];
-      updated[idx] = { ...c, email: data.email, email_confidence: data.score };
-      setResults(updated);
-      setLog('Found: ' + data.email + ' (' + data.score + '% confidence)');
-    } else {
-      setLog('Not found on Hunter.io');
-    }
-  };
-
-  const importSelected = async () => {
-    const toImport = results.filter((_, i) => selected.has(String(i)));
-    if (!toImport.length) { setLog('Select contacts first'); return; }
+  const doMassEmail = async () => {
+    const ids = Array.from(selIds);
+    if (!ids.length) return notify('Select contacts first', true);
     setLoading(true);
-    setLog('Importing ' + toImport.length + ' contacts...');
-    const data = await callEngine({ action: 'import_contacts', contacts: toImport });
-    setLog('Imported ' + data.imported + ' contacts to pipeline');
-    await loadStats();
-    setLoading(false);
+    const d = await call('send_mass_email', { contact_ids: ids, subject: massSubject, body_template: massBody });
+    if (d.error) { notify(d.error, true); } else { notify(`Sent ${d.sent || 0} emails`); }
+    await loadStats(); setLoading(false);
   };
 
-  const sendMass = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: contacts } = await supabase.from('contacts').select('*').eq('user_id', user.id).neq('status', 'lost');
-    const ids = (contacts || []).filter((c: any) => c.email).map((c: any) => c.id);
-    if (!ids.length) { setLog('No contacts with emails. Import contacts first.'); return; }
+  const doSchedule = async () => {
+    const ids = Array.from(selIds);
+    if (!ids.length) return notify('Select contacts first', true);
     setLoading(true);
-    setLog('Sending to ' + ids.length + ' contacts...');
-    const data = await callEngine({ action: 'send_mass_email', contact_ids: ids, subject: massSubject, body_template: massBody });
-    setLog('Logged ' + data.sent + ' sends.');
-    if (data.contacts?.length) {
-      const emails = data.contacts.map((c: any) => c.email).join(',');
-      window.open('mailto:' + emails + '?subject=' + encodeURIComponent(massSubject) + '&body=' + encodeURIComponent(massBody), '_blank');
-    }
-    await loadStats();
-    setLoading(false);
+    const d = await call('schedule_followups', { contact_ids: ids });
+    if (d.error) { notify(d.error, true); } else { notify(`Created ${d.sequences_created || 0} sequences`); }
+    await loadStats(); setLoading(false);
   };
-
-  const scheduleFollowups = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: contacts } = await supabase.from('contacts').select('id').eq('user_id', user.id).eq('status', 'new');
-    const ids = (contacts || []).map((c: any) => c.id);
-    if (!ids.length) { setLog('No new contacts. Import contacts first.'); return; }
-    setLoading(true);
-    setLog('Scheduling sequences for ' + ids.length + ' contacts...');
-    const data = await callEngine({ action: 'schedule_followups', contact_ids: ids, tone: fuTone, pain: fuPain });
-    setLog('Created ' + data.sequences_created + ' sequences (4 touchpoints each)');
-    await loadStats();
-    setLoading(false);
-  };
-
-  const Tag = ({ label, active, onClick, color = '#4f8ef7' }: { label: string; active: boolean; onClick: () => void; color?: string }) => (
-    <span onClick={onClick} style={{
-      display: 'inline-block', padding: '4px 10px', margin: '3px', borderRadius: 20,
-      cursor: 'pointer', fontSize: 12, fontWeight: 600,
-      background: active ? color : 'transparent',
-      color: active ? '#fff' : '#7a8ba6',
-      border: '1px solid ' + (active ? color : '#2a3348'),
-    }}>{label}</span>
-  );
-
-  const mBtn = (m: typeof mode, label: string) => (
-    <button onClick={() => setMode(m)} style={{
-      padding: '8px 16px', borderRadius: 7, border: 'none', cursor: 'pointer',
-      fontSize: 13, fontWeight: 600,
-      background: mode === m ? '#4f8ef7' : '#2a3348',
-      color: mode === m ? '#fff' : '#7a8ba6',
-    }}>{label}</button>
-  );
-
-  const inp = (val: string, set: (v: string) => void, ph: string, type = 'text') => (
-    <input type={type} value={val} onChange={e => set(e.target.value)} placeholder={ph}
-      style={{ width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, marginBottom: 10 }} />
-  );
-
-  const taStyle = { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const };
 
   return (
-    <div>
-      <StatBar items={[
-        { label: 'Found (Apollo)', value: stats.found, sub: 'this search' },
-        { label: 'In Pipeline', value: stats.imported, sub: 'total contacts' },
-        { label: 'Emails Sent', value: stats.emailed, sub: 'logged' },
-        { label: 'Sequences', value: stats.sequenced, sub: 'active' },
-      ]} />
-
-      <div style={{ display: 'flex', gap: 8, margin: '16px 0', flexWrap: 'wrap' }}>
-        {mBtn('search', 'Find Contacts')}
-        {mBtn('individual', 'Individual Outreach')}
-        {mBtn('mass', 'Mass Email')}
-        {mBtn('followup', 'Schedule Follow-ups')}
+    <div style={s.wrap}>
+      <div style={s.stats}>
+        <div style={s.stat}><div style={s.statN}>{stats.found}</div><div style={s.statL}>Found (Apollo)</div><div style={s.statSub}>this search</div></div>
+        <div style={s.stat}><div style={s.statN}>{stats.pipeline}</div><div style={s.statL}>In Pipeline</div><div style={s.statSub}>total contacts</div></div>
+        <div style={s.stat}><div style={s.statN}>{stats.emails}</div><div style={s.statL}>Emails Sent</div><div style={s.statSub}>logged</div></div>
+        <div style={s.stat}><div style={s.statN}>{stats.seqs}</div><div style={s.statL}>Sequences</div><div style={s.statSub}>active</div></div>
       </div>
 
-      {log && (
-        <div style={{ padding: '10px 14px', background: '#0d1a0d', border: '1px solid #38c9a055', borderRadius: 7, fontSize: 13, color: '#38c9a0', marginBottom: 12 }}>{log}</div>
-      )}
+      <div style={s.tabs}>
+        {TABS.map((t, i) => <button key={t} style={i === tab ? s.tabA : s.tab} onClick={() => setTab(i)}>{t}</button>)}
+      </div>
 
-      {mode === 'search' && (
-        <>
-          <Card title="Find Contacts - Apollo.io">
-            <Label>Job titles (click to toggle)</Label>
-            <div style={{ marginBottom: 10 }}>
-              {CBAM_TITLES.map(t => <Tag key={t} label={t} active={titles.includes(t)} onClick={() => setTitles(ts => ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t])} />)}
+      {msg && <div style={isErr ? s.err : s.ok}>{msg}</div>}
+
+      {tab === 0 && (
+        <div>
+          <div style={s.card}>
+            <div style={s.cardTitle}>Find Contacts — Apollo.io</div>
+            <label style={s.label}>Job titles (click to toggle)</label>
+            <div style={{ marginBottom: 12 }}>
+              {JOB_TITLES.map(t => (
+                <span key={t} style={{ ...s.chip, background: titles.includes(t) ? '#1a3060' : '#0a0f18', color: titles.includes(t) ? '#4f8ef7' : '#7a8ba6', borderColor: titles.includes(t) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleTitle(t)}>{t}</span>
+              ))}
             </div>
-            <Label>Countries (click to toggle)</Label>
+            <label style={s.label}>Countries (click to toggle)</label>
             <div style={{ marginBottom: 16 }}>
-              {COUNTRIES.map(c => <Tag key={c} label={c} active={countries.includes(c)} color="#38c9a0" onClick={() => setCountries(cs => cs.includes(c) ? cs.filter(x => x !== c) : [...cs, c])} />)}
+              {COUNTRIES.map(c => (
+                <span key={c} style={{ ...s.chip, background: countries.includes(c) ? '#1a3060' : '#0a0f18', color: countries.includes(c) ? '#4f8ef7' : '#7a8ba6', borderColor: countries.includes(c) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleCountry(c)}>{c}</span>
+              ))}
             </div>
-            <BtnRow>
-              <Btn onClick={doSearch} disabled={loading}>{loading ? 'Searching...' : 'Search Apollo'}</Btn>
-              {results.length > 0 && <Btn onClick={() => { setPage(p => p + 1); doSearch(); }} color="#2a3348" textColor="#e8ecf4">Next Page</Btn>}
-            </BtnRow>
-          </Card>
-
-          <Card title="Apify - Scrape LinkedIn Companies">
-            <div style={{ fontSize: 12, color: '#7a8ba6', marginBottom: 8 }}>Paste one LinkedIn company URL per line.</div>
-            <textarea value={apifyUrls} onChange={e => setApifyUrls(e.target.value)}
-              placeholder="https://linkedin.com/company/coolset" rows={4} style={taStyle} />
-            <BtnRow>
-              <Btn onClick={doApify} disabled={loading} color="#9b59b6">{loading ? 'Scraping...' : 'Scrape via Apify'}</Btn>
-            </BtnRow>
-          </Card>
-
-          {results.length > 0 && (
-            <Card title={'Results - ' + results.length + ' contacts'}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <Btn onClick={() => setSelected(new Set(results.map((_, i) => String(i))))} color="#2a3348" textColor="#e8ecf4">Select All</Btn>
-                <Btn onClick={() => setSelected(new Set())} color="#2a3348" textColor="#e8ecf4">Clear</Btn>
-                <Btn onClick={importSelected} disabled={loading}>Import Selected ({selected.size})</Btn>
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr>{['', 'Name', 'Role', 'Company', 'Country', 'Email', ''].map(h => (
-                      <th key={h} style={{ padding: '6px 8px', textAlign: 'left', color: '#7a8ba6', borderBottom: '1px solid #2a3348' }}>{h}</th>
-                    ))}</tr>
-                  </thead>
-                  <tbody>
-                    {results.map((c, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #1a2035' }}>
-                        <td style={{ padding: '6px 8px' }}>
-                          <input type="checkbox" checked={selected.has(String(i))} onChange={() => setSelected(s => { const n = new Set(s); n.has(String(i)) ? n.delete(String(i)) : n.add(String(i)); return n; })} />
-                        </td>
-                        <td style={{ padding: '6px 8px', color: '#e8ecf4' }}>{c.first_name} {c.last_name}</td>
-                        <td style={{ padding: '6px 8px', color: '#7a8ba6' }}>{c.role}</td>
-                        <td style={{ padding: '6px 8px', color: '#e8ecf4' }}>{c.company}</td>
-                        <td style={{ padding: '6px 8px', color: '#7a8ba6' }}>{c.country}</td>
-                        <td style={{ padding: '6px 8px' }}>
-                          {c.email
-                            ? <span style={{ color: '#38c9a0' }}>{c.email}{c.email_confidence ? ' (' + c.email_confidence + '%)' : ''}</span>
-                            : <button onClick={() => verifyEmail(i)} style={{ background: 'none', border: '1px solid #2a3348', color: '#f7a94f', borderRadius: 4, padding: '2px 7px', fontSize: 11, cursor: 'pointer' }}>Find email</button>
-                          }
-                        </td>
-                        <td style={{ padding: '6px 8px' }}>
-                          {c.linkedin_url && <a href={c.linkedin_url} target="_blank" rel="noreferrer" style={{ color: '#4f8ef7', fontSize: 11 }}>LinkedIn</a>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          )}
-        </>
-      )}
-
-      {mode === 'individual' && (
-        <Card title="Individual Outreach">
-          <Grid2>
-            <div>
-              <Label>First name</Label>{inp(indiv.first_name, v => setIndiv(c => ({ ...c, first_name: v })), 'Marie')}
-              <Label>Last name</Label>{inp(indiv.last_name, v => setIndiv(c => ({ ...c, last_name: v })), 'Dupont')}
-              <Label>Company</Label>{inp(indiv.company, v => setIndiv(c => ({ ...c, company: v })), 'Coolset')}
-              <Label>Role</Label>{inp(indiv.role, v => setIndiv(c => ({ ...c, role: v })), 'Head of Sustainability')}
-            </div>
-            <div>
-              <Label>Email</Label>{inp(indiv.email, v => setIndiv(c => ({ ...c, email: v })), 'marie@coolset.com', 'email')}
-              <Label>LinkedIn URL</Label>{inp(indiv.linkedin_url, v => setIndiv(c => ({ ...c, linkedin_url: v })), 'https://linkedin.com/in/marie')}
-              <Label>Channel</Label>
-              <select value={indivChannel} onChange={e => setIndivChannel(e.target.value)}
-                style={{ width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, marginBottom: 10 }}>
-                <option value="linkedin">LinkedIn DM</option>
-                <option value="email">Email</option>
-              </select>
-              <Label>Message</Label>
-              <textarea value={indivMsg} onChange={e => setIndivMsg(e.target.value)} placeholder="Your personalised message..." rows={5} style={taStyle} />
-            </div>
-          </Grid2>
-          <BtnRow>
-            {indivChannel === 'linkedin' && indiv.linkedin_url && (
-              <Btn onClick={() => window.open(indiv.linkedin_url, '_blank')} color="#0077b5">Open LinkedIn</Btn>
-            )}
-            {indivChannel === 'email' && indiv.email && (
-              <Btn onClick={() => window.open('mailto:' + indiv.email + '?subject=Quick question - SupplyMind AI&body=' + encodeURIComponent(indivMsg), '_blank')} color="#4f8ef7">Open in Gmail</Btn>
-            )}
-            <Btn onClick={async () => {
-              setLoading(true);
-              await callEngine({ action: 'import_contacts', contacts: [{ ...indiv, source: 'manual' }] });
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) await supabase.from('activities').insert({ user_id: user.id, type: indivChannel === 'email' ? 'Email' : 'LinkedIn', company: indiv.company, note: 'Reached out to ' + indiv.first_name });
-              setLog('Contact saved and activity logged');
-              await loadStats();
-              setLoading(false);
-            }} color="#2a3348" textColor="#e8ecf4" disabled={loading}>Save and Log</Btn>
-          </BtnRow>
-        </Card>
-      )}
-
-      {mode === 'mass' && (
-        <Card title="Mass Email Campaign">
-          <Label>Subject line</Label>
-          {inp(massSubject, setMassSubject, 'Quick question about CBAM readiness')}
-          <Label>Body - use {'{'}{'{'}'first_name'{'}'}{'}'}{'}'}, {'{'}{'{'}'company'{'}'}{'}'}{'}'} for personalisation</Label>
-          <textarea value={massBody} onChange={e => setMassBody(e.target.value)} rows={10} style={taStyle} />
-          <BtnRow>
-            <Btn onClick={sendMass} disabled={loading}>{loading ? 'Sending...' : 'Send Mass Email'}</Btn>
-          </BtnRow>
-        </Card>
-      )}
-
-      {mode === 'followup' && (
-        <Card title="Schedule 4-Touch Follow-up Sequences">
-          <div style={{ background: '#1a1a2d', border: '1px solid #4f8ef755', borderRadius: 7, padding: '10px 14px', fontSize: 12, color: '#4f8ef7', marginBottom: 16 }}>
-            Schedules a 4-touch sequence for all new contacts: Day 0 LinkedIn, Day 3 DM, Day 7 Email, Day 14 Breakup.
+            <button style={s.btn} onClick={doApollo} disabled={loading}>{loading ? 'Searching...' : 'Search Apollo'}</button>
           </div>
-          <Grid2>
-            <div>
-              <Label>Tone</Label>
-              <select value={fuTone} onChange={e => setFuTone(e.target.value)}
-                style={{ width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, marginBottom: 10 }}>
-                <option value="founder">Founder-to-founder</option>
-                <option value="consultative">Consultative</option>
-                <option value="bold">Bold / challenger</option>
-              </select>
+          <div style={s.card}>
+            <div style={s.cardTitle}>Apify — Scrape LinkedIn Companies</div>
+            <label style={s.label}>Paste one LinkedIn company URL per line.</label>
+            <textarea style={s.textarea} value={apifyUrls} onChange={e => setApifyUrls(e.target.value)} placeholder="https://www.linkedin.com/company/siemens" />
+            <button style={{ ...s.btn, background: '#a855f7' }} onClick={doApify} disabled={loading}>{loading ? 'Scraping...' : 'Scrape via Apify'}</button>
+          </div>
+        </div>
+      )}
+
+      {tab === 1 && (
+        <div style={s.card}>
+          <div style={s.cardTitle}>Individual Outreach</div>
+          <label style={s.label}>Channel</label>
+          <select style={{ ...s.input }} value={indivChannel} onChange={e => setIndivChannel(e.target.value)}>
+            <option value="linkedin">LinkedIn</option>
+            <option value="email">Cold Email</option>
+            <option value="followup">Follow-up</option>
+          </select>
+          <p style={{ color: '#7a8ba6', fontSize: 13 }}>Select contacts below, then use the Generate tab to craft personalised messages.</p>
+        </div>
+      )}
+
+      {tab === 2 && (
+        <div style={s.card}>
+          <div style={s.cardTitle}>Mass Email</div>
+          <label style={s.label}>Subject</label>
+          <input style={s.input} value={massSubject} onChange={e => setMassSubject(e.target.value)} />
+          <label style={s.label}>Body (use {{'{'}}{{'}'}}first_name{{'}'}}{'}'}, {{'{'}}{{'{'}}company{{'}'}}{{'}'}})</label>
+          <textarea style={{ ...s.textarea, minHeight: 160 }} value={massBody} onChange={e => setMassBody(e.target.value)} />
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <button style={s.btnSm} onClick={selAll}>Select All ({contacts.length})</button>
+            <button style={s.btnSm} onClick={selNone}>Deselect All</button>
+            <span style={{ fontSize: 13, color: '#7a8ba6', alignSelf: 'center' }}>{selIds.size} selected</span>
+          </div>
+          <button style={s.btnG} onClick={doMassEmail} disabled={loading || !selIds.size}>{loading ? 'Sending...' : 'Send Mass Email'}</button>
+        </div>
+      )}
+
+      {tab === 3 && (
+        <div style={s.card}>
+          <div style={s.cardTitle}>Schedule Follow-ups</div>
+          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 16 }}>Creates a 4-touch sequence: LinkedIn (day 0) → Follow-up (day 3) → Email (day 7) → Final follow-up (day 14).</p>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <button style={s.btnSm} onClick={selAll}>Select All ({contacts.length})</button>
+            <button style={s.btnSm} onClick={selNone}>Deselect All</button>
+            <span style={{ fontSize: 13, color: '#7a8ba6', alignSelf: 'center' }}>{selIds.size} selected</span>
+          </div>
+          <button style={s.btn} onClick={doSchedule} disabled={loading || !selIds.size}>{loading ? 'Scheduling...' : 'Schedule Follow-ups'}</button>
+        </div>
+      )}
+
+      {contacts.length > 0 && (
+        <div style={s.card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={s.cardTitle}>Pipeline ({contacts.length})</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={s.btnSm} onClick={selAll}>All</button>
+              <button style={s.btnSm} onClick={selNone}>None</button>
             </div>
-            <div>
-              <Label>Pain point context</Label>
-              {inp(fuPain, setFuPain, 'Manual CBAM tracking, 200+ suppliers...')}
-            </div>
-          </Grid2>
-          <BtnRow>
-            <Btn onClick={scheduleFollowups} disabled={loading}>{loading ? 'Scheduling...' : 'Schedule for All New Contacts'}</Btn>
-          </BtnRow>
-        </Card>
+          </div>
+          <div style={{ overflowX: 'auto' as const }}>
+            <table style={s.table}>
+              <thead><tr>
+                <th style={s.th}></th><th style={s.th}>Name</th><th style={s.th}>Company</th><th style={s.th}>Role</th><th style={s.th}>Email</th><th style={s.th}>Country</th><th style={s.th}>Source</th>
+              </tr></thead>
+              <tbody>
+                {contacts.map(c => (
+                  <tr key={c.id} style={{ background: selIds.has(c.id!) ? '#0d1f3c' : 'transparent' }}>
+                    <td style={s.td}><input type="checkbox" checked={selIds.has(c.id!)} onChange={() => toggleSel(c.id!)} /></td>
+                    <td style={s.td}>{c.first_name} {c.last_name}</td>
+                    <td style={s.td}>{c.company}</td>
+                    <td style={s.td}>{c.role}</td>
+                    <td style={s.td}>{c.email || '—'}</td>
+                    <td style={s.td}>{c.country}</td>
+                    <td style={s.td}><span style={{ fontSize: 11, background: '#1e2d45', padding: '2px 7px', borderRadius: 10 }}>{c.source}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );
