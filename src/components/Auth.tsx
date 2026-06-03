@@ -21,8 +21,7 @@ export default function Auth() {
   const inp: React.CSSProperties = {
     width:"100%", padding:"10px 12px", background:"#161b25",
     border:"1px solid #2a3348", borderRadius:6, color:"#e8ecf4",
-    fontSize:13, outline:"none", boxSizing:"border-box", marginBottom:10,
-    display:"block"
+    fontSize:13, outline:"none", boxSizing:"border-box", marginBottom:10, display:"block"
   };
 
   return (
