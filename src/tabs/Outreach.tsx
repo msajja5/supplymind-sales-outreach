@@ -1,53 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
-const TABS = ['Find Contacts', 'Individual Outreach', 'Mass Email', 'Schedule Follow-ups'];
-
 interface Contact {
-  id?: string;
-  first_name: string;
-  last_name: string;
-  company: string;
-  role: string;
-  email: string;
-  linkedin_url: string;
-  country: string;
-  source: string;
-  status?: string;
+  id?: string; first_name: string; last_name: string;
+  company: string; role: string; email: string;
+  linkedin_url: string; country: string; source: string; status?: string;
 }
 
 const s: Record<string, React.CSSProperties> = {
   wrap: { color: '#e8ecf4', fontFamily: 'Inter, sans-serif' },
-  stats: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 },
   stat: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 10, padding: '16px 20px', textAlign: 'center' as const },
   statN: { fontSize: 28, fontWeight: 700, color: '#4f8ef7' },
   statL: { fontSize: 12, color: '#7a8ba6', marginTop: 2 },
-  statSub: { fontSize: 11, color: '#4a5a6a' },
-  tabs: { display: 'flex', gap: 8, marginBottom: 20 },
-  tab: { padding: '8px 16px', borderRadius: 8, border: '1px solid #2a3348', background: 'transparent', color: '#7a8ba6', cursor: 'pointer', fontSize: 13 },
-  tabA: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
-  card: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 12, padding: 24, marginBottom: 16 },
-  cardTitle: { fontSize: 16, fontWeight: 700, color: '#e8ecf4', marginBottom: 16 },
-  err: { background: '#1a0f0f', border: '1px solid #c0392b55', borderRadius: 8, padding: '10px 14px', color: '#e74c3c', fontSize: 13, marginBottom: 14 },
-  ok: { background: '#0f1a10', border: '1px solid #38c9a055', borderRadius: 8, padding: '10px 14px', color: '#38c9a0', fontSize: 13, marginBottom: 14 },
+  statS: { fontSize: 11, color: '#4a5a6a' },
+  tabs: { display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' as const },
+  tab: { padding: '8px 14px', borderRadius: 8, border: '1px solid #2a3348', background: 'transparent', color: '#7a8ba6', cursor: 'pointer', fontSize: 13 },
+  tabA: { padding: '8px 14px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  card: { background: '#0d1525', border: '1px solid #1e2d45', borderRadius: 12, padding: 22, marginBottom: 14 },
+  cardT: { fontSize: 15, fontWeight: 700, color: '#e8ecf4', marginBottom: 14 },
+  err: { background: '#1a0f0f', border: '1px solid #c0392b55', borderRadius: 8, padding: '10px 14px', color: '#e74c3c', fontSize: 13, marginBottom: 12 },
+  ok: { background: '#0f1a10', border: '1px solid #38c9a055', borderRadius: 8, padding: '10px 14px', color: '#38c9a0', fontSize: 13, marginBottom: 12 },
+  warn: { background: '#1a1200', border: '1px solid #f59e0b55', borderRadius: 8, padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   label: { fontSize: 12, color: '#7a8ba6', marginBottom: 4, display: 'block' },
-  input: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, marginBottom: 12 },
-  textarea: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, minHeight: 90, resize: 'vertical' as const, marginBottom: 12 },
+  input: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, marginBottom: 10 },
+  textarea: { width: '100%', padding: '9px 12px', background: '#0a0f18', border: '1px solid #2a3348', borderRadius: 7, color: '#e8ecf4', fontSize: 13, boxSizing: 'border-box' as const, minHeight: 110, resize: 'vertical' as const, marginBottom: 10 },
   btn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#4f8ef7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnG: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#38c9a0', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
-  btnH: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  btnA: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#0a0f18', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  btnP: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#a855f7', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   btnSm: { padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1e2d45', color: '#e8ecf4', cursor: 'pointer', fontSize: 12 },
   chip: { display: 'inline-block', padding: '4px 10px', borderRadius: 20, border: '1px solid #2a3348', fontSize: 12, cursor: 'pointer', margin: '0 4px 4px 0', userSelect: 'none' as const },
-  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 13 },
-  th: { padding: '8px 10px', textAlign: 'left' as const, color: '#7a8ba6', borderBottom: '1px solid #1e2d45', fontSize: 12 },
-  td: { padding: '8px 10px', borderBottom: '1px solid #0f1830', color: '#e8ecf4' },
+  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 12 },
+  th: { padding: '8px 10px', textAlign: 'left' as const, color: '#7a8ba6', borderBottom: '1px solid #1e2d45', fontSize: 11 },
+  td: { padding: '7px 10px', borderBottom: '1px solid #0f1830', color: '#e8ecf4' },
+  row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
 };
 
 const JOB_TITLES = ['Head of Sustainability','CBAM Manager','ESG Director','Trade Compliance Manager','Sustainability Manager','VP ESG','Chief Sustainability Officer','Head of Trade Finance','Climate Director','Carbon Accounting Manager'];
-const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy'];
+const COUNTRIES = ['Netherlands','Belgium','Germany','France','Denmark','Sweden','Austria','Switzerland','Spain','Italy','Poland','Finland'];
+const TABS = ['🔍 Find Leads','📤 Upload CSV','📧 Mass Email','⏰ Follow-up Sequences'];
 
-const MASS_SUBJECT_DEFAULT = 'Quick question about CBAM readiness — SupplyMind AI';
-const MASS_BODY_DEFAULT = ['Hi {{first_name}},', '', 'Managing CBAM compliance across dozens of suppliers is becoming a real operational challenge for companies like {{company}}.', '', 'SupplyMind AI automates the entire process — supplier data collection, carbon calculations, and CBAM report generation.', '', 'Would it make sense to spend 20 minutes showing you how it works?', '', 'Best,', 'Manjunath', 'SupplyMind AI'].join('\n');
+const SUBJECT_DEFAULT = 'Quick question about CBAM compliance — SupplyMind AI';
+const BODY_LINES = [
+  'Hi {{first_name}},',
+  '',
+  'Managing CBAM compliance across dozens of suppliers is a growing operational burden for companies like {{company}}.',
+  '',
+  'SupplyMind AI automates the entire process — supplier data collection, carbon calculations, and CBAM report generation — saving your team weeks of manual work.',
+  '',
+  'Would it make sense to spend 20 minutes exploring how this could work for {{company}}?',
+  '',
+  'Best,',
+  'Manjunath',
+  'SupplyMind AI | supplymindai.com',
+];
 
 export default function Outreach() {
   const [tab, setTab] = useState(0);
@@ -56,33 +63,30 @@ export default function Outreach() {
   const [msg, setMsg] = useState('');
   const [isErr, setIsErr] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [hunterLoading, setHunterLoading] = useState(false);
-  const [stats, setStats] = useState({ found: 0, pipeline: 0, emails: 0, seqs: 0 });
-  const [titles, setTitles] = useState<string[]>(['Head of Sustainability','CBAM Manager','ESG Director']);
-  const [countries, setCountries] = useState<string[]>(['Netherlands','Belgium','Germany']);
-  const [apifyUrls, setApifyUrls] = useState('');
-  const [indivChannel, setIndivChannel] = useState('linkedin');
-  const [massSubject, setMassSubject] = useState(MASS_SUBJECT_DEFAULT);
-  const [massBody, setMassBody] = useState(MASS_BODY_DEFAULT);
+  const [stats, setStats] = useState({ pipeline: 0, emails: 0, seqs: 0, missing: 0 });
+  const [titles, setTitles] = useState(['Head of Sustainability','CBAM Manager','ESG Director']);
+  const [countries, setCountries] = useState(['Netherlands','Belgium','Germany','France']);
+  const [hunterCompanies, setHunterCompanies] = useState('');
+  const [subject, setSubject] = useState(SUBJECT_DEFAULT);
+  const [bodyText, setBodyText] = useState(BODY_LINES.join('\n'));
+  const [fromName, setFromName] = useState('Manjunath @ SupplyMind AI');
+  const [csvPreview, setCsvPreview] = useState<Contact[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { loadStats(); loadContacts(); }, []);
+  useEffect(() => { loadAll(); }, []);
 
-  const loadStats = async () => {
+  const loadAll = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [{ count: pipeline }, { count: emails }, { count: seqs }] = await Promise.all([
-      supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-      supabase.from('messages').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'sent'),
+    const [{ data: cts }, { count: emails }, { count: seqs }] = await Promise.all([
+      supabase.from('contacts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(200),
+      supabase.from('messages').select('*', { count: 'exact', head: true }).eq('user_id', user.id).in('status', ['sent','logged']),
       supabase.from('sequences').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'active'),
     ]);
-    setStats(st => ({ ...st, pipeline: pipeline || 0, emails: emails || 0, seqs: seqs || 0 }));
-  };
-
-  const loadContacts = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase.from('contacts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(100);
-    if (data) setContacts(data);
+    if (cts) {
+      setContacts(cts);
+      setStats({ pipeline: cts.length, emails: emails || 0, seqs: seqs || 0, missing: cts.filter(c => !c.email).length });
+    }
   };
 
   const call = async (action: string, extra: Record<string, unknown> = {}) => {
@@ -95,12 +99,13 @@ export default function Outreach() {
     return r.json();
   };
 
-  const notify = (text: string, err = false) => { setMsg(text); setIsErr(err); setTimeout(() => setMsg(''), 6000); };
+  const notify = (text: string, err = false) => { setMsg(text); setIsErr(err); setTimeout(() => setMsg(''), 7000); };
   const toggleTitle = (t: string) => setTitles(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
   const toggleCountry = (c: string) => setCountries(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   const toggleSel = (id: string) => setSelIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const selAll = () => setSelIds(new Set(contacts.map(c => c.id!).filter(Boolean)));
   const selNone = () => setSelIds(new Set());
+  const selWithEmail = () => setSelIds(new Set(contacts.filter(c => c.email && c.id).map(c => c.id!)));
 
   const doApollo = async () => {
     if (!titles.length || !countries.length) return notify('Select at least one title and country', true);
@@ -108,39 +113,79 @@ export default function Outreach() {
     const d = await call('apollo_search', { titles, countries });
     if (d.error) { notify(d.error, true); setLoading(false); return; }
     const imp = await call('import_contacts', { contacts: d.people || [] });
-    setStats(st => ({ ...st, found: d.total || 0 }));
-    notify(`Found ${d.people?.length || 0} contacts, imported ${imp.imported || 0} new to pipeline`);
-    await loadContacts(); await loadStats();
-    setLoading(false);
+    notify(`Apollo: found ${d.people?.length || 0}, imported ${imp.imported || 0} new contacts`);
+    await loadAll(); setLoading(false);
   };
 
-  const doApify = async () => {
-    const urls = apifyUrls.split('\n').map((u: string) => u.trim()).filter(Boolean);
-    if (!urls.length) return notify('Paste at least one LinkedIn URL', true);
+  const doHunter = async () => {
+    const companies = hunterCompanies.split('\n').map((c: string) => c.trim()).filter(Boolean);
+    if (!companies.length) return notify('Enter at least one company name', true);
     setLoading(true);
-    const d = await call('apify_scrape', { urls });
+    const d = await call('hunter_find_people', { companies, titles });
     if (d.error) { notify(d.error, true); setLoading(false); return; }
     const imp = await call('import_contacts', { contacts: d.people || [] });
-    notify(`Scraped ${d.people?.length || 0} contacts, imported ${imp.imported || 0} new`);
-    await loadContacts(); await loadStats();
-    setLoading(false);
+    notify(`Hunter: found ${d.people?.length || 0} contacts with emails, imported ${imp.imported || 0} new`);
+    await loadAll(); setLoading(false);
   };
 
   const doHunterEnrich = async () => {
-    setHunterLoading(true);
+    setLoading(true);
     const d = await call('hunter_enrich_pipeline');
-    if (d.error) { notify(d.error, true); } else { notify(`Hunter found ${d.enriched || 0} emails out of ${d.total_missing || 0} contacts missing email`); }
-    await loadContacts();
-    setHunterLoading(false);
+    if (d.error) { notify(d.error, true); } else { notify(`Hunter enriched ${d.enriched || 0} / ${d.total_missing || 0} contacts with emails`); }
+    await loadAll(); setLoading(false);
+  };
+
+  const parseCsv = (text: string): Contact[] => {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z_]/g, '_'));
+    return lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => { row[h] = vals[i] || ''; });
+      return {
+        first_name: row.first_name || row.firstname || row.first || '',
+        last_name: row.last_name || row.lastname || row.last || '',
+        company: row.company || row.organization || row.company_name || '',
+        role: row.role || row.title || row.job_title || row.position || '',
+        email: row.email || row.email_address || '',
+        linkedin_url: row.linkedin || row.linkedin_url || '',
+        country: row.country || row.location || '',
+        source: 'csv',
+      };
+    }).filter(c => c.first_name || c.email || c.company);
+  };
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = ev.target?.result as string;
+      const parsed = parseCsv(text);
+      setCsvPreview(parsed);
+      notify(`Parsed ${parsed.length} rows from CSV. Click Import to save.`);
+    };
+    reader.readAsText(file);
+  };
+
+  const doImportCsv = async () => {
+    if (!csvPreview.length) return notify('No CSV data to import', true);
+    setLoading(true);
+    const d = await call('import_contacts', { contacts: csvPreview });
+    if (d.error) { notify(d.error, true); } else { notify(`Imported ${d.imported} contacts from CSV`); setCsvPreview([]); }
+    await loadAll(); setLoading(false);
   };
 
   const doMassEmail = async () => {
     const ids = Array.from(selIds);
     if (!ids.length) return notify('Select contacts first', true);
     setLoading(true);
-    const d = await call('send_mass_email', { contact_ids: ids, subject: massSubject, body_template: massBody });
-    if (d.error) { notify(d.error, true); } else { notify(`Sent ${d.sent || 0} emails`); }
-    await loadStats(); setLoading(false);
+    const d = await call('send_mass_email', { contact_ids: ids, subject, body_template: bodyText, from_name: fromName });
+    if (d.error) { notify(d.error, true); }
+    else if (d.note) { notify(`${d.note} (${d.logged} logged)`); }
+    else { notify(`Sent ${d.sent} emails successfully!`); }
+    await loadAll(); setLoading(false);
   };
 
   const doSchedule = async () => {
@@ -148,27 +193,26 @@ export default function Outreach() {
     if (!ids.length) return notify('Select contacts first', true);
     setLoading(true);
     const d = await call('schedule_followups', { contact_ids: ids });
-    if (d.error) { notify(d.error, true); } else { notify(`Created ${d.sequences_created || 0} sequences`); }
-    await loadStats(); setLoading(false);
+    if (d.error) { notify(d.error, true); } else { notify(`Created ${d.sequences_created} follow-up sequences`); }
+    await loadAll(); setLoading(false);
   };
-
-  const missingEmail = contacts.filter(c => !c.email).length;
 
   return (
     <div style={s.wrap}>
-      <div style={s.stats}>
-        <div style={s.stat}><div style={s.statN}>{stats.found}</div><div style={s.statL}>Found (Apollo)</div><div style={s.statSub}>this search</div></div>
-        <div style={s.stat}><div style={s.statN}>{stats.pipeline}</div><div style={s.statL}>In Pipeline</div><div style={s.statSub}>total contacts</div></div>
-        <div style={s.stat}><div style={s.statN}>{stats.emails}</div><div style={s.statL}>Emails Sent</div><div style={s.statSub}>logged</div></div>
-        <div style={s.stat}><div style={s.statN}>{stats.seqs}</div><div style={s.statL}>Sequences</div><div style={s.statSub}>active</div></div>
+      <div style={s.grid4}>
+        {[['Pipeline', stats.pipeline, 'contacts'], ['Emails', stats.emails, 'sent/logged'], ['Sequences', stats.seqs, 'active'], ['Missing Email', stats.missing, 'need enriching']]
+          .map(([l, n, sub]) => (
+          <div key={String(l)} style={s.stat}>
+            <div style={{ ...s.statN, color: l === 'Missing Email' && Number(n) > 0 ? '#f59e0b' : '#4f8ef7' }}>{n}</div>
+            <div style={s.statL}>{l}</div><div style={s.statS}>{sub}</div>
+          </div>
+        ))}
       </div>
 
-      {missingEmail > 0 && (
-        <div style={{ background: '#1a1200', border: '1px solid #f59e0b55', borderRadius: 8, padding: '10px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ {missingEmail} contacts missing email address</span>
-          <button style={s.btnH} onClick={doHunterEnrich} disabled={hunterLoading}>
-            {hunterLoading ? 'Finding emails...' : '🔍 Find Emails (Hunter)'}
-          </button>
+      {stats.missing > 0 && (
+        <div style={s.warn}>
+          <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ {stats.missing} contacts missing email — use Hunter to find them</span>
+          <button style={{ ...s.btnA, padding: '6px 14px', fontSize: 12 }} onClick={doHunterEnrich} disabled={loading}>🔍 Find Emails (Hunter)</button>
         </div>
       )}
 
@@ -181,104 +225,134 @@ export default function Outreach() {
       {tab === 0 && (
         <div>
           <div style={s.card}>
-            <div style={s.cardTitle}>Find Contacts — Apollo.io</div>
-            <label style={s.label}>Job titles (click to toggle)</label>
-            <div style={{ marginBottom: 12 }}>
-              {JOB_TITLES.map(t => (
-                <span key={t} style={{ ...s.chip, background: titles.includes(t) ? '#1a3060' : '#0a0f18', color: titles.includes(t) ? '#4f8ef7' : '#7a8ba6', borderColor: titles.includes(t) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleTitle(t)}>{t}</span>
-              ))}
-            </div>
-            <label style={s.label}>Countries (click to toggle)</label>
-            <div style={{ marginBottom: 16 }}>
-              {COUNTRIES.map(c => (
-                <span key={c} style={{ ...s.chip, background: countries.includes(c) ? '#1a3060' : '#0a0f18', color: countries.includes(c) ? '#4f8ef7' : '#7a8ba6', borderColor: countries.includes(c) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleCountry(c)}>{c}</span>
-              ))}
-            </div>
-            <button style={s.btn} onClick={doApollo} disabled={loading}>{loading ? 'Searching...' : 'Search Apollo'}</button>
+            <div style={s.cardT}>🌍 Hunter.io — Find Leads by Company (FREE, recommended)</div>
+            <label style={s.label}>Company names, one per line (e.g. Siemens, BASF, Bosch)</label>
+            <textarea style={s.textarea} value={hunterCompanies} onChange={e => setHunterCompanies(e.target.value)}
+              placeholder={"Siemens
+BASF
+Philips
+SAP
+ThyssenKrupp"} />
+            <label style={s.label}>Filter by job titles (optional — same selection as below)</label>
+            <div style={{ marginBottom: 12 }}>{JOB_TITLES.map(t => (
+              <span key={t} style={{ ...s.chip, background: titles.includes(t) ? '#1a3060' : '#0a0f18', color: titles.includes(t) ? '#4f8ef7' : '#7a8ba6', borderColor: titles.includes(t) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleTitle(t)}>{t}</span>
+            ))}</div>
+            <button style={s.btnA} onClick={doHunter} disabled={loading}>{loading ? 'Searching Hunter...' : '🔍 Search Hunter.io'}</button>
+            <span style={{ fontSize: 12, color: '#4a5a6a', marginLeft: 12 }}>Finds verified work emails automatically</span>
           </div>
+
           <div style={s.card}>
-            <div style={s.cardTitle}>Apify — Scrape LinkedIn Companies</div>
-            <label style={s.label}>Paste one LinkedIn company URL per line.</label>
-            <textarea style={s.textarea} value={apifyUrls} onChange={e => setApifyUrls(e.target.value)} placeholder="https://www.linkedin.com/company/siemens" />
-            <button style={{ ...s.btn, background: '#a855f7' }} onClick={doApify} disabled={loading}>{loading ? 'Scraping...' : 'Scrape via Apify'}</button>
+            <div style={s.cardT}>🚀 Apollo.io — Search by Title + Country (Paid plan required)</div>
+            <label style={s.label}>Job titles</label>
+            <div style={{ marginBottom: 10 }}>{JOB_TITLES.map(t => (
+              <span key={t} style={{ ...s.chip, background: titles.includes(t) ? '#1a3060' : '#0a0f18', color: titles.includes(t) ? '#4f8ef7' : '#7a8ba6', borderColor: titles.includes(t) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleTitle(t)}>{t}</span>
+            ))}</div>
+            <label style={s.label}>Countries</label>
+            <div style={{ marginBottom: 14 }}>{COUNTRIES.map(c => (
+              <span key={c} style={{ ...s.chip, background: countries.includes(c) ? '#1a3060' : '#0a0f18', color: countries.includes(c) ? '#4f8ef7' : '#7a8ba6', borderColor: countries.includes(c) ? '#4f8ef7' : '#2a3348' }} onClick={() => toggleCountry(c)}>{c}</span>
+            ))}</div>
+            <button style={s.btn} onClick={doApollo} disabled={loading}>{loading ? 'Searching Apollo...' : 'Search Apollo'}</button>
           </div>
         </div>
       )}
 
       {tab === 1 && (
         <div style={s.card}>
-          <div style={s.cardTitle}>Individual Outreach</div>
-          <label style={s.label}>Channel</label>
-          <select style={{ ...s.input }} value={indivChannel} onChange={e => setIndivChannel(e.target.value)}>
-            <option value="linkedin">LinkedIn</option>
-            <option value="email">Cold Email</option>
-            <option value="followup">Follow-up</option>
-          </select>
-          <p style={{ color: '#7a8ba6', fontSize: 13 }}>Select contacts below, then use the Generate tab to craft personalised messages.</p>
+          <div style={s.cardT}>📂 Upload Contact CSV</div>
+          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 14 }}>
+            Upload a CSV with columns: <code style={{ color: '#4f8ef7' }}>first_name, last_name, company, role, email, country, linkedin_url</code><br />
+            Column names are flexible — we auto-detect common variations.
+          </p>
+          <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={onFileChange} />
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <button style={s.btn} onClick={() => fileRef.current?.click()}>📁 Choose CSV File</button>
+            {csvPreview.length > 0 && (
+              <button style={s.btnG} onClick={doImportCsv} disabled={loading}>{loading ? 'Importing...' : `✓ Import ${csvPreview.length} Contacts`}</button>
+            )}
+          </div>
+          {csvPreview.length > 0 && (
+            <div style={{ overflowX: 'auto' as const, maxHeight: 300, overflowY: 'auto' as const }}>
+              <table style={s.table}>
+                <thead><tr><th style={s.th}>Name</th><th style={s.th}>Company</th><th style={s.th}>Role</th><th style={s.th}>Email</th><th style={s.th}>Country</th></tr></thead>
+                <tbody>{csvPreview.slice(0, 20).map((c, i) => (
+                  <tr key={i}><td style={s.td}>{c.first_name} {c.last_name}</td><td style={s.td}>{c.company}</td><td style={s.td}>{c.role}</td>
+                    <td style={s.td}>{c.email || <span style={{ color: '#f59e0b' }}>—</span>}</td><td style={s.td}>{c.country}</td></tr>
+                ))}</tbody>
+              </table>
+              {csvPreview.length > 20 && <div style={{ color: '#4a5a6a', fontSize: 12, padding: '8px 10px' }}>...and {csvPreview.length - 20} more rows</div>}
+            </div>
+          )}
         </div>
       )}
 
       {tab === 2 && (
         <div style={s.card}>
-          <div style={s.cardTitle}>Mass Email</div>
-          <label style={s.label}>Subject</label>
-          <input style={s.input} value={massSubject} onChange={e => setMassSubject(e.target.value)} />
-          <label style={s.label}>Body (use {{first_name}}, {{company}})</label>
-          <textarea style={{ ...s.textarea, minHeight: 160 }} value={massBody} onChange={e => setMassBody(e.target.value)} />
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <div style={s.cardT}>📧 Send Mass Personalised Email</div>
+          <div style={s.row2}>
+            <div>
+              <label style={s.label}>From name</label>
+              <input style={s.input} value={fromName} onChange={e => setFromName(e.target.value)} placeholder="Manjunath @ SupplyMind AI" />
+            </div>
+            <div>
+              <label style={s.label}>Subject line</label>
+              <input style={s.input} value={subject} onChange={e => setSubject(e.target.value)} />
+            </div>
+          </div>
+          <label style={s.label}>Email body — use {'{{'}first_name{'}}'}, {'{{'}company{'}}'}, {'{{'}role{'}}'}</label>
+          <textarea style={{ ...s.textarea, minHeight: 200 }} value={bodyText} onChange={e => setBodyText(e.target.value)} />
+          <div style={{ background: '#0a1020', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#4a5a6a' }}>
+            ℹ️ Add <strong style={{ color: '#4f8ef7' }}>Resend API key</strong> in Settings to actually send emails (free 3,000/month). Without it, emails are logged only.
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' as const }}>
             <button style={s.btnSm} onClick={selAll}>Select All ({contacts.length})</button>
+            <button style={s.btnSm} onClick={selWithEmail}>With Email ({contacts.filter(c=>c.email).length})</button>
             <button style={s.btnSm} onClick={selNone}>Deselect All</button>
             <span style={{ fontSize: 13, color: '#7a8ba6', alignSelf: 'center' }}>{selIds.size} selected</span>
           </div>
-          <button style={s.btnG} onClick={doMassEmail} disabled={loading || !selIds.size}>{loading ? 'Sending...' : 'Send Mass Email'}</button>
+          <button style={s.btnG} onClick={doMassEmail} disabled={loading || !selIds.size}>{loading ? 'Sending...' : `📤 Send to ${selIds.size} Contacts`}</button>
         </div>
       )}
 
       {tab === 3 && (
         <div style={s.card}>
-          <div style={s.cardTitle}>Schedule Follow-ups</div>
-          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 16 }}>Creates a 4-touch sequence: LinkedIn (day 0) → Follow-up (day 3) → Email (day 7) → Final follow-up (day 14).</p>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            <button style={s.btnSm} onClick={selAll}>Select All ({contacts.length})</button>
+          <div style={s.cardT}>⏰ Schedule Follow-up Sequences</div>
+          <p style={{ color: '#7a8ba6', fontSize: 13, marginBottom: 14 }}>Creates a 4-touch drip: LinkedIn connection (day 0) → Follow-up (day 3) → Cold email (day 7) → Final nudge (day 14).</p>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+            <button style={s.btnSm} onClick={selAll}>Select All</button>
             <button style={s.btnSm} onClick={selNone}>Deselect All</button>
             <span style={{ fontSize: 13, color: '#7a8ba6', alignSelf: 'center' }}>{selIds.size} selected</span>
           </div>
-          <button style={s.btn} onClick={doSchedule} disabled={loading || !selIds.size}>{loading ? 'Scheduling...' : 'Schedule Follow-ups'}</button>
+          <button style={s.btn} onClick={doSchedule} disabled={loading || !selIds.size}>{loading ? 'Scheduling...' : `⏰ Schedule ${selIds.size} Sequences`}</button>
         </div>
       )}
 
       {contacts.length > 0 && (
         <div style={s.card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={s.cardTitle}>Pipeline ({contacts.length})</div>
+            <div style={s.cardT} style2={{ marginBottom: 0 }}>Contact Pipeline ({contacts.length})</div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button style={s.btnSm} onClick={selAll}>All</button>
+              <button style={s.btnSm} onClick={selWithEmail}>With Email</button>
               <button style={s.btnSm} onClick={selNone}>None</button>
             </div>
           </div>
-          <div style={{ overflowX: 'auto' as const }}>
+          <div style={{ overflowX: 'auto' as const, maxHeight: 400, overflowY: 'auto' as const }}>
             <table style={s.table}>
               <thead><tr>
-                <th style={s.th}></th><th style={s.th}>Name</th><th style={s.th}>Company</th><th style={s.th}>Role</th><th style={s.th}>Email</th><th style={s.th}>Country</th><th style={s.th}>Source</th>
+                <th style={s.th}></th><th style={s.th}>Name</th><th style={s.th}>Company</th><th style={s.th}>Role</th>
+                <th style={s.th}>Email</th><th style={s.th}>Country</th><th style={s.th}>Source</th>
               </tr></thead>
-              <tbody>
-                {contacts.map(c => (
-                  <tr key={c.id} style={{ background: selIds.has(c.id!) ? '#0d1f3c' : 'transparent' }}>
-                    <td style={s.td}><input type="checkbox" checked={selIds.has(c.id!)} onChange={() => toggleSel(c.id!)} /></td>
-                    <td style={s.td}>{c.first_name} {c.last_name}</td>
-                    <td style={s.td}>{c.company}</td>
-                    <td style={s.td}>{c.role}</td>
-                    <td style={s.td}>
-                      {c.email
-                        ? <span style={{ color: '#38c9a0' }}>{c.email}</span>
-                        : <span style={{ color: '#f59e0b', fontSize: 11 }}>⚠ missing</span>
-                      }
-                    </td>
-                    <td style={s.td}>{c.country}</td>
-                    <td style={s.td}><span style={{ fontSize: 11, background: '#1e2d45', padding: '2px 7px', borderRadius: 10 }}>{c.source}</span></td>
-                  </tr>
-                ))}
-              </tbody>
+              <tbody>{contacts.map(c => (
+                <tr key={c.id} style={{ background: selIds.has(c.id!) ? '#0d1f3c' : 'transparent' }}>
+                  <td style={s.td}><input type="checkbox" checked={selIds.has(c.id!)} onChange={() => toggleSel(c.id!)} /></td>
+                  <td style={s.td}>{c.first_name} {c.last_name}</td>
+                  <td style={s.td}>{c.company}</td>
+                  <td style={s.td} style2={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.role}</td>
+                  <td style={s.td}>{c.email ? <span style={{ color: '#38c9a0' }}>{c.email}</span> : <span style={{ color: '#f59e0b', fontSize: 11 }}>⚠ missing</span>}</td>
+                  <td style={s.td}>{c.country}</td>
+                  <td style={s.td}><span style={{ fontSize: 10, background: '#1e2d45', padding: '2px 7px', borderRadius: 10 }}>{c.source}</span></td>
+                </tr>
+              ))}</tbody>
             </table>
           </div>
         </div>
