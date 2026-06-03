@@ -1,51 +1,80 @@
-export const Card = ({ children, title }: { children: React.ReactNode; title?: string }) => (
-  <div style={{background:'#1e2535',border:'1px solid #2a3348',borderRadius:10,padding:20,marginBottom:20}}>
-    {title && <div style={{fontSize:14,fontWeight:600,color:'#4f8ef7',marginBottom:14}}>{title}</div>}
-    {children}
-  </div>
-)
+import React from "react";
 
-export const Label = ({ children }: { children: React.ReactNode }) => (
-  <label style={{fontSize:12,color:'#7a8ba6',display:'block',marginBottom:5,marginTop:12}}>{children}</label>
-)
+const baseInput: React.CSSProperties = {
+  width:"100%", background:"#161b25", border:"1px solid #2a3348",
+  borderRadius:6, padding:"9px 12px", color:"#e8ecf4", fontSize:13,
+  outline:"none", boxSizing:"border-box" as const, marginBottom:10
+};
 
-export const Btn = ({ children, onClick, color='#4f8ef7', textColor='#fff', disabled=false, sm=false }:
-  { children: React.ReactNode; onClick?: ()=>void; color?: string; textColor?: string; disabled?: boolean; sm?: boolean }) => (
-  <button onClick={onClick} disabled={disabled}
-    style={{display:'inline-flex',alignItems:'center',gap:7,padding:sm?'5px 12px':'9px 18px',
-      borderRadius:7,border:'none',cursor:disabled?'not-allowed':'pointer',
-      fontSize:sm?12:13,fontWeight:600,background:color,color:textColor,opacity:disabled?.6:1}}>
-    {children}
-  </button>
-)
+export function Card({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <div style={{background:"#0d1117",border:"1px solid #2a3348",borderRadius:10,padding:20,marginBottom:20}}>
+      {title && <h3 style={{margin:"0 0 16px",fontSize:15,color:"#e8ecf4",fontWeight:700}}>{title}</h3>}
+      {children}
+    </div>
+  );
+}
 
-export const BtnRow = ({ children }: { children: React.ReactNode }) => (
-  <div style={{display:'flex',gap:10,marginTop:14,flexWrap:'wrap'}}>{children}</div>
-)
+export function Label({ children }: { children: React.ReactNode }) {
+  return <div style={{fontSize:12,fontWeight:600,color:"#7a8ba6",marginBottom:5,marginTop:8}}>{children}</div>;
+}
 
-export const Grid2 = ({ children }: { children: React.ReactNode }) => (
-  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>{children}</div>
-)
+export function Btn({
+  children, onClick, disabled=false, color="#4f8ef7", textColor="#fff", sm=false
+}: {
+  children: React.ReactNode; onClick?: ()=>void; disabled?: boolean;
+  color?: string; textColor?: string; sm?: boolean
+}) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      padding: sm ? "6px 14px" : "9px 20px",
+      background: disabled ? "#2a3348" : color,
+      color: disabled ? "#7a8ba6" : textColor,
+      border:"none", borderRadius:7, cursor: disabled?"not-allowed":"pointer",
+      fontWeight:600, fontSize: sm?12:13, transition:"opacity .15s"
+    }}>{children}</button>
+  );
+}
 
-export const OutputBox = ({ text }: { text: string }) => (
-  <div style={{background:'#161b25',border:'1px solid #2a3348',borderRadius:7,padding:14,
-    fontSize:13,lineHeight:1.7,whiteSpace:'pre-wrap',color:'#e8ecf4',marginTop:12,minHeight:60}}>
-    {text}
-  </div>
-)
+export function BtnRow({ children }: { children: React.ReactNode }) {
+  return <div style={{display:"flex",gap:10,marginTop:14,flexWrap:"wrap",alignItems:"center"}}>{children}</div>;
+}
 
-export const Empty = ({ msg='Nothing here yet.' }: { msg?: string }) => (
-  <div style={{textAlign:'center',color:'#7a8ba6',padding:'40px 20px',fontSize:13}}>{msg}</div>
-)
+export function Grid2({ children }: { children: React.ReactNode }) {
+  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>{children}</div>;
+}
 
-export const StatBar = ({ items }: { items: {label:string;value:number;sub:string}[] }) => (
-  <div style={{display:'flex',gap:16,marginBottom:20,flexWrap:'wrap'}}>
-    {items.map(i => (
-      <div key={i.label} style={{background:'#1e2535',border:'1px solid #2a3348',borderRadius:10,padding:'14px 20px',flex:1,minWidth:120}}>
-        <div style={{fontSize:11,color:'#7a8ba6',marginBottom:4}}>{i.label}</div>
-        <div style={{fontSize:24,fontWeight:700,color:'#4f8ef7'}}>{i.value}</div>
-        <div style={{fontSize:11,color:'#38c9a0',marginTop:2}}>{i.sub}</div>
-      </div>
-    ))}
-  </div>
-)
+export function Empty({ msg }: { msg: string }) {
+  return <div style={{textAlign:"center",padding:40,color:"#7a8ba6",fontSize:14}}>{msg}</div>;
+}
+
+export function StatBar({ items }: { items:{label:string;value:number|string;sub?:string}[] }) {
+  return (
+    <div style={{display:"grid",gridTemplateColumns:`repeat(${items.length},1fr)`,gap:12,marginBottom:20}}>
+      {items.map((it,i)=>(
+        <div key={i} style={{background:"#0d1117",border:"1px solid #2a3348",borderRadius:9,padding:"14px 16px",textAlign:"center"}}>
+          <div style={{fontSize:26,fontWeight:800,color:"#4f8ef7"}}>{it.value}</div>
+          <div style={{fontSize:12,color:"#e8ecf4",fontWeight:600,marginTop:2}}>{it.label}</div>
+          {it.sub && <div style={{fontSize:11,color:"#7a8ba6"}}>{it.sub}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Auto-apply styles to native inputs & selects & textareas globally
+export function injectFormStyles() {
+  const style = document.createElement("style");
+  style.textContent = \`
+    input, select, textarea {
+      width:100%; background:#161b25; border:1px solid #2a3348;
+      border-radius:6px; padding:9px 12px; color:#e8ecf4; font-size:13px;
+      outline:none; box-sizing:border-box; margin-bottom:10px; font-family:inherit;
+    }
+    input:focus, select:focus, textarea:focus { border-color:#4f8ef7; }
+    textarea { resize:vertical; min-height:80px; }
+    select { cursor:pointer; }
+    table { font-family: inherit; }
+  \`;
+  document.head.appendChild(style);
+}
