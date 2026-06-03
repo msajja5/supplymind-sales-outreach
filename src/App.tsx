@@ -8,7 +8,6 @@ import Tracker from "./tabs/Tracker";
 import Settings from "./tabs/Settings";
 import Guide from "./tabs/Guide";
 import Outreach from "./tabs/Outreach";
-import { injectFormStyles } from "./components/Card";
 
 const TABS = [
   { id:"outreach", label:"🚀 Outreach" },
@@ -26,7 +25,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    injectFormStyles();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -36,53 +34,40 @@ export default function App() {
   }, []);
 
   if (loading) return (
-    <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#060b11",color:"#4f8ef7",fontSize:16,fontWeight:600}}>
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#060b11",color:"#7a8ba6",fontSize:14}}>
       Loading SupplyMind AI...
     </div>
   );
-
   if (!session) return <Auth />;
 
   return (
-    <div style={{ minHeight:"100vh", background:"#060b11", fontFamily:"Inter,system-ui,sans-serif" }}>
-      {/* Header */}
-      <div style={{ background:"#0d1117", borderBottom:"1px solid #2a3348", padding:"0 24px" }}>
-        <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:54 }}>
-          <span style={{ fontWeight:800, fontSize:17, color:"#4f8ef7", letterSpacing:"-0.3px" }}>
-            ⚡ SupplyMind AI
-          </span>
-          <span style={{ fontSize:12, color:"#7a8ba6" }}>{session.user.email}</span>
-          <button onClick={()=>supabase.auth.signOut()} style={{
-            background:"none", border:"1px solid #2a3348", borderRadius:6,
-            padding:"5px 12px", color:"#7a8ba6", cursor:"pointer", fontSize:12
-          }}>Sign out</button>
+    <div style={{minHeight:"100vh",background:"#060b11"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 24px",borderBottom:"1px solid #2a3348",background:"#0d1117"}}>
+        <span style={{color:"#4f8ef7",fontWeight:800,fontSize:18}}>⚡ SupplyMind AI</span>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <span style={{color:"#7a8ba6",fontSize:12}}>{session.user.email}</span>
+          <button onClick={()=>supabase.auth.signOut()} style={{background:"none",border:"1px solid #2a3348",borderRadius:6,padding:"5px 12px",color:"#7a8ba6",cursor:"pointer",fontSize:12}}>Sign out</button>
         </div>
       </div>
-
-      {/* Tabs */}
-      <div style={{ background:"#0d1117", borderBottom:"1px solid #2a3348", padding:"0 24px", overflowX:"auto" }}>
-        <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", gap:2 }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{
-              padding:"12px 16px", background:"none", border:"none", cursor:"pointer",
-              fontSize:13, fontWeight:600,
-              color: tab===t.id ? "#4f8ef7" : "#7a8ba6",
-              borderBottom: tab===t.id ? "2px solid #4f8ef7" : "2px solid transparent",
-              whiteSpace:"nowrap"
-            }}>{t.label}</button>
-          ))}
-        </div>
+      <div style={{display:"flex",gap:0,padding:"0 24px",borderBottom:"1px solid #2a3348",background:"#0d1117",overflowX:"auto"}}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{
+            padding:"12px 16px",background:"none",border:"none",cursor:"pointer",
+            fontSize:13,fontWeight:600,
+            color: tab===t.id ? "#4f8ef7" : "#7a8ba6",
+            borderBottom: tab===t.id ? "2px solid #4f8ef7" : "2px solid transparent",
+            whiteSpace:"nowrap"
+          }}>{t.label}</button>
+        ))}
       </div>
-
-      {/* Content */}
-      <div style={{ maxWidth:1200, margin:"0 auto", padding:"24px 24px" }}>
+      <div style={{padding:24,maxWidth:1100,margin:"0 auto"}}>
         {tab==="outreach"  && <Outreach />}
-        {tab==="generate"  && <Generate />}
-        {tab==="sequence"  && <Sequence />}
-        {tab==="contacts"  && <Contacts />}
-        {tab==="tracker"   && <Tracker />}
+        {tab==="generate"  && <Generate  session={session} />}
+        {tab==="sequence"  && <Sequence  session={session} />}
+        {tab==="contacts"  && <Contacts  session={session} />}
+        {tab==="tracker"   && <Tracker   session={session} />}
         {tab==="guide"     && <Guide />}
-        {tab==="settings"  && <Settings />}
+        {tab==="settings"  && <Settings  session={session} />}
       </div>
     </div>
   );
