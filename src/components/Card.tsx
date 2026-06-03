@@ -17,7 +17,7 @@ export function Btn({
   children, onClick, disabled=false, color="#4f8ef7", textColor="#fff", sm=false
 }: {
   children: React.ReactNode; onClick?: ()=>void; disabled?: boolean;
-  color?: string; textColor?: string; sm?: boolean
+  color?: string; textColor?: string; sm?: boolean;
 }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
@@ -25,7 +25,7 @@ export function Btn({
       background: disabled ? "#2a3348" : color,
       color: disabled ? "#7a8ba6" : textColor,
       border:"none", borderRadius:7, cursor: disabled?"not-allowed":"pointer",
-      fontWeight:600, fontSize: sm?12:13, transition:"opacity .15s"
+      fontWeight:600, fontSize: sm?12:13
     }}>{children}</button>
   );
 }
@@ -40,6 +40,16 @@ export function Grid2({ children }: { children: React.ReactNode }) {
 
 export function Empty({ msg }: { msg: string }) {
   return <div style={{textAlign:"center",padding:40,color:"#7a8ba6",fontSize:14}}>{msg}</div>;
+}
+
+export function OutputBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      background:"#0a0f18", border:"1px solid #2a3348", borderRadius:8,
+      padding:"14px 16px", fontSize:13, color:"#c8d8f0", lineHeight:1.7,
+      whiteSpace:"pre-wrap", marginTop:12, minHeight:60
+    }}>{children}</div>
+  );
 }
 
 export function StatBar({ items }: { items:{label:string;value:number|string;sub?:string}[] }) {
@@ -60,7 +70,7 @@ export function injectFormStyles() {
   if (document.getElementById("sm-global-styles")) return;
   const style = document.createElement("style");
   style.id = "sm-global-styles";
-  const css = [
+  style.textContent = [
     "input, select, textarea {",
     "  width:100%; background:#161b25; border:1px solid #2a3348;",
     "  border-radius:6px; padding:9px 12px; color:#e8ecf4; font-size:13px;",
@@ -69,7 +79,7 @@ export function injectFormStyles() {
     "input:focus, select:focus, textarea:focus { border-color:#4f8ef7; }",
     "textarea { resize:vertical; min-height:80px; }",
     "select { cursor:pointer; }",
-  ].join("\n");
-  style.textContent = css;
+  ].join("
+");
   document.head.appendChild(style);
 }
