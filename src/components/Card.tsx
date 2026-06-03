@@ -54,7 +54,7 @@ export function OutputBox({ children }: { children: React.ReactNode }) {
 
 export function StatBar({ items }: { items:{label:string;value:number|string;sub?:string}[] }) {
   return (
-    <div style={{display:"grid",gridTemplateColumns:"repeat("+items.length+",1fr)",gap:12,marginBottom:20}}>
+    <div style={{display:"grid",gridTemplateColumns:`repeat(${items.length},1fr)`,gap:12,marginBottom:20}}>
       {items.map((it,i)=>(
         <div key={i} style={{background:"#0d1117",border:"1px solid #2a3348",borderRadius:9,padding:"14px 16px",textAlign:"center"}}>
           <div style={{fontSize:26,fontWeight:800,color:"#4f8ef7"}}>{it.value}</div>
@@ -64,22 +64,4 @@ export function StatBar({ items }: { items:{label:string;value:number|string;sub
       ))}
     </div>
   );
-}
-
-export function injectFormStyles() {
-  if (document.getElementById("sm-global-styles")) return;
-  const style = document.createElement("style");
-  style.id = "sm-global-styles";
-  style.textContent = [
-    "input, select, textarea {",
-    "  width:100%; background:#161b25; border:1px solid #2a3348;",
-    "  border-radius:6px; padding:9px 12px; color:#e8ecf4; font-size:13px;",
-    "  outline:none; box-sizing:border-box; margin-bottom:10px; font-family:inherit;",
-    "}",
-    "input:focus, select:focus, textarea:focus { border-color:#4f8ef7; }",
-    "textarea { resize:vertical; min-height:80px; }",
-    "select { cursor:pointer; }",
-  ].join("
-");
-  document.head.appendChild(style);
 }
