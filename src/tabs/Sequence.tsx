@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Card, Label, Btn, BtnRow, Grid2, OutputBox } from '../components/Card'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_URL: string = (import.meta as any).env.VITE_SUPABASE_URL
 const LABELS = ['Touch 1 — Day 0 · LinkedIn Connection Note','Touch 2 — Day 3 · LinkedIn DM','Touch 3 — Day 7 · Cold Email','Touch 4 — Day 14 · Breakup Email']
 
 export default function Sequence({ session }: { session: Session }) {
